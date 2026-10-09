@@ -6,12 +6,12 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from app import auth, email
+from app import auth, email, paypal
 from app.config import get_settings
 from app.db import session_factory
 from app.errors import DomainError
 from app.main import create_app
-from app.models import LoginChallenge, SellerSession, utcnow
+from app.models import LoginChallenge, Order, SellerSession, utcnow
 
 pytestmark = pytest.mark.integration
 ORIGIN = {"origin": "http://localhost:5173"}
@@ -113,7 +113,7 @@ def test_shared_email_quota_enforced_across_requests(db_clean, delivery):
         assert len(delivery) == 3
 
 
-def test_catalog_confirm_csrf_and_cross_seller_ownership(db_clean, delivery, provider):
+def test_catalog_confirm_csrf_and_cross_seller_ownership(db_clean, delivery, provider, monkeypatch):
     with (
         TestClient(create_app(), base_url="https://testserver") as owner,
         TestClient(create_app(), base_url="https://testserver") as outsider,
@@ -166,6 +166,38 @@ def test_catalog_confirm_csrf_and_cross_seller_ownership(db_clean, delivery, pro
             json={"quote_id": quote["quote_id"], "session_id": buyer["session_id"]},
         )
         assert checkout.status_code == 200
+        order_path = "/api/me/orders/" + checkout.json()["order_id"]
+        assert owner.get(order_path).json()["title"] == "Scarf"
+        assert outsider.get(order_path).status_code == 404
+        shipment = {"carrier": "DHL", "tracking_number": "12345"}
+        assert (
+            outsider.post(
+                order_path + "/tracking", headers=other_headers, json=shipment
+            ).status_code
+            == 404
+        )
+        assert (
+            owner.post(order_path + "/tracking", headers=ORIGIN, json=shipment).status_code == 403
+        )
+        assert (
+            owner.post(order_path + "/tracking", headers=headers, json=shipment).status_code == 409
+        )
+        with session_factory() as db, db.begin():
+            order = db.get(Order, uuid.UUID(checkout.json()["order_id"]))
+            order.status, order.capture_id = "paid", "CAPTURE"
+            provider_id = order.paypal_order_id
+        monkeypatch.setattr(
+            paypal,
+            "request",
+            lambda *args: {
+                "id": provider_id,
+                "purchase_units": [{"shipping": {"trackers": [{"id": "CAPTURE-12345"}]}}],
+            },
+        )
+        assert (
+            owner.post(order_path + "/tracking", headers=headers, json=shipment).json()["status"]
+            == "shipped"
+        )
         assert len(owner.get("/api/me/orders").json()["items"]) == 1
         assert outsider.get("/api/me/orders").json()["items"] == []
         assert owner.post(path + "/archive", headers=headers).json()["status"] == "archived"

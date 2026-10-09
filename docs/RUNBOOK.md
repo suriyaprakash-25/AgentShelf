@@ -52,8 +52,6 @@ Unexpected handler errors use `JOB_HANDLER_FAILED`; sensitive exception text is 
 Database connection/commit failures still surface to the process supervisor.
 Meta delivery is at-least-once after network uncertainty; do not claim exactly-once texts.
 
-## Secrets and live release
-
 ## Email sign-in and dashboard configuration
 
 Configure `RESEND_API_KEY` and a verified sender in `EMAIL_FROM`; register the same
@@ -75,6 +73,23 @@ The dashboard currently uses AG Grid Community, with a custom theme, filters,
 sorting, pagination and current-page CSV exports. It is not an AG Studio integration
 or a claim that the sponsor checklist passes. Session/link expiry cleanup and a full
 policy/merchant verification workflow remain release work.
+
+## Seller fulfilment
+
+Authenticated sellers can view their own shipping details and submit a single-parcel
+carrier/tracking number. The provider adapter confirms the tracker ID before moving
+paid to shipped; uncertain POST results re-read the same order. Repeating the same
+parcel is idempotent. Changing an already shipped parcel currently requires operations
+review; multi-parcel shipping and corrections are not implemented. No notification
+email is requested from PayPal by this endpoint. WhatsApp tracking commands and actual
+sandbox receiving/tracking permissions still need acceptance evidence.
+
+Provider references: [Resend email API](https://resend.com/docs/api-reference/emails/send-email),
+[FastAPI cookies](https://fastapi.tiangolo.com/advanced/response-cookies/),
+[AG Grid React](https://www.ag-grid.com/react-data-grid/getting-started/) and
+[PayPal tracking](https://developer.paypal.com/api/orders-v2/track-orders/use/).
+
+## Secrets and live release
 
 Rotate credentials in the provider console and deployment secret store, restart the
 API/worker and run readiness plus a sandbox transaction. No secret value goes into

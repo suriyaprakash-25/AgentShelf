@@ -6,14 +6,48 @@ from fastapi import APIRouter, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 
-from app import auth
+from app import auth, tracking
 from app.config import get_settings
 from app.db import session_factory
 from app.errors import DomainError
 from app.guards import safe_text
-from app.models import Order, Product, Seller, SellerSession
+from app.models import Order, Product, Quote, Seller, SellerSession
 
 router = APIRouter()
+
+
+class TrackingInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    carrier: str = Field(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9][A-Za-z0-9 ._-]*$")
+    tracking_number: str = Field(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9-]+$")
+
+
+@router.post("/api/me/orders/{order_id}/tracking")
+def add_tracking(order_id: uuid.UUID, body: TrackingInput, request: Request):
+    seller_id, _ = auth.seller_access(request, write=True)
+    return tracking.track(seller_id, order_id, body.carrier, body.tracking_number)
+
+
+@router.get("/api/me/orders/{order_id}")
+def order_detail(order_id: uuid.UUID, request: Request, response: Response):
+    seller_id, _ = auth.seller_access(request)
+    response.headers["Cache-Control"] = "no-store"
+    with session_factory() as db:
+        order = db.scalar(select(Order).where(Order.id == order_id, Order.seller_id == seller_id))
+        if not order:
+            raise DomainError("ORDER_NOT_FOUND", "This order is unavailable.", 404)
+        quote = db.get(Quote, order.quote_id)
+        return {
+            "id": str(order.id),
+            "title": quote.title,
+            "qty": quote.qty,
+            "status": order.status,
+            "ship_to": order.ship_to,
+            "carrier": order.carrier,
+            "tracking_number": order.tracking_number,
+        }
+
+
 EMAIL_PATTERN = r"^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$"
 
 

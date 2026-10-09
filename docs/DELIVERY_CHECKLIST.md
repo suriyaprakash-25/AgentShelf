@@ -30,6 +30,8 @@ live release require their own evidence even after code is implemented.
 - [ ] Durable processed media, listing drafts, price confirmation and YES publication.
 - [ ] WhatsApp image/listing/edit commands and paid notifications.
 - [ ] Tracking command/API pushed to PayPal with ownership checks.
+  Local dashboard/API implementation is tested with controlled provider responses;
+  WhatsApp command and real sandbox tracker acceptance remain open.
 - [ ] Streaming Playground with MCP tool results and server-controlled checkout approval.
 - [ ] Safe reservation expiry and uncertain-payment reconciliation.
 - [ ] Full partial-refund/reversal/dispute handling with visible operational states.

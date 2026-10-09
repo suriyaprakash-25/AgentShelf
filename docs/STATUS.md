@@ -17,11 +17,12 @@ matching the supplied original. A user-requested memory note points to this proj
 
 | Evidence | Result | Boundary |
 | --- | --- | --- |
-| Backend pytest, Python 3.12.10 | 122 passed | October 10; real Postgres 18.4; provider calls mocked where marked |
+| Backend pytest, Python 3.12.10 | 127 passed | October 10; real Postgres 18.4; provider calls mocked where marked |
 | Seller auth/CSRF/ownership | Six integration tests pass | Email delivery mocked; actual hashed/single-use/expiry/concurrent session logic and DB |
 | Auth migration up/down/up + schema drift check | Pass | Dedicated agentshelf_migration_test DB; dev DB also has no drift |
 | Verified webhook PII minimization | Pass | Buyer email/address removed from new inbox writes after verification; existing historical data needs audit |
 | Seller browser workflow | Assertions pass | Synthetic test-only email-link fixture -> draft -> confirm/publish -> 375px -> logout; Chrome teardown hangs |
+| Tracking and order ownership | Five focused tests and seller API ownership/CSRF tests pass | PayPal acknowledgement/lost-response reconciliation mocked; real provider acceptance still pending |
 | Worker handler rollback, retry limit and concurrent claims | Pass | Real Postgres savepoints and SKIP LOCKED; no external delivery proof |
 | Ruff lint and format | Pass | Locked Ruff 0.16.10 |
 | Alembic up/down/up and schema check | Pass | Dedicated test DB; local DB also has no drift |
@@ -53,7 +54,7 @@ The frontend preview was visually inspected. Product illustrations are labelled 
 | M5 | Candidate direct-payee create/read/capture, locks, stable request IDs | ADR-001 and real sandbox approval/capture/refresh evidence |
 | M6 | Five-header API verification, verified inbox and deduplication | Real signed sandbox delivery, deployed timing, retries/reconciliation |
 | M7 | Notification job waits for a verified completed-capture event | Real WhatsApp paid alert including approved address within 10 seconds |
-| M8 | Order tracking fields only | Authenticated tracking command/API and actual PayPal tracking evidence |
+| M8 | Seller-owned order details and dashboard/API tracking; stable key, provider tracker verification and lost-response reread | WhatsApp tracking command and actual PayPal sandbox evidence |
 | M9 | Manual REST catalog explorer, exact quote/confirmation and activity | Anthropic buyer agent using MCP, SSE chat, complete server-bound session controls |
 | M10 | Magic links, secure hashed sessions, web/email fallback, custom AG Grid Community product/order tables, filters/sort/current-page CSV, ownership tests | Real email delivery, AG Studio framework/licence, complete staged S6 and fulfilment UX |
 | M11 | Render blueprint, local startup/CI config | Funded HTTPS staging, real CI runs, backups/restore and external 5-minute test |
@@ -114,7 +115,7 @@ fixture only. Domain/proxy configuration must preserve same-site Lax cookies; de
 origin/CSRF/CORS behavior remains a release test. Sign-in challenges expire in 15 minutes;
 session/link cleanup and merchant verification remain open. Community grids are not AG Studio.
 The seller chunk is lazy loaded; public JS remains approximately 284 kB, seller chunk
-approximately 879 kB before compression. No Lighthouse/performance target is claimed.
+approximately 881 kB before compression. No Lighthouse/performance target is claimed.
 Chrome teardown still hangs; assertions passed but the runner was interrupted.
 
 Next dependency-critical work: configure sandbox/Meta/Anthropic credentials securely,

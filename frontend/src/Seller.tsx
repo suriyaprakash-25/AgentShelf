@@ -408,6 +408,130 @@ export function SellerDashboard() {
           Next page
         </button>
       </div>
+      <div className="seller-actions">
+        {orders.map((order) => (
+          <Fulfilment
+            key={order.id}
+            order={order}
+            csrf={me.csrf_token}
+            refresh={() => load()}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+type Detail = {
+  title: string;
+  qty: number;
+  carrier: string | null;
+  tracking_number: string | null;
+  ship_to: {
+    name?: { full_name?: string };
+    address?: Record<string, string>;
+  } | null;
+};
+function Fulfilment({
+  order,
+  csrf,
+  refresh,
+}: {
+  order: Order;
+  csrf: string;
+  refresh: () => Promise<void>;
+}) {
+  const [detail, setDetail] = useState<Detail | null>(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const path = `/api/me/orders/${order.id}`;
+  async function show() {
+    try {
+      setDetail(await api<Detail>(path));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    const data = new FormData(event.currentTarget);
+    try {
+      await api(
+        path + "/tracking",
+        {
+          carrier: data.get("carrier"),
+          tracking_number: data.get("tracking_number"),
+        },
+        undefined,
+        { csrf },
+      );
+      await show();
+      await refresh();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  const address = detail?.ship_to?.address;
+  return (
+    <div className="panel">
+      <strong>Order {order.id.slice(0, 8)}</strong>
+      <span>{order.status}</span>
+      <button className="button secondary" onClick={() => void show()}>
+        View order and shipping details
+      </button>
+      {detail && (
+        <>
+          <p>
+            {detail.title} × {detail.qty}
+          </p>
+          {address && (
+            <address>
+              {detail.ship_to?.name?.full_name}
+              <br />
+              {[
+                address.address_line_1,
+                address.address_line_2,
+                address.admin_area_2,
+                address.admin_area_1,
+                address.postal_code,
+                address.country_code,
+              ]
+                .filter(Boolean)
+                .join(", ")}
+            </address>
+          )}
+          {detail.tracking_number && (
+            <p>
+              {detail.carrier}: {detail.tracking_number}
+            </p>
+          )}
+        </>
+      )}
+      {order.status === "paid" && (
+        <form className="seller-form" onSubmit={submit}>
+          <label>
+            Carrier
+            <input name="carrier" placeholder="DHL" maxLength={64} required />
+          </label>
+          <label>
+            Tracking number
+            <input
+              name="tracking_number"
+              pattern="[A-Za-z0-9-]+"
+              maxLength={64}
+              required
+            />
+          </label>
+          <button className="button" disabled={busy}>
+            {busy ? "Verifying tracking…" : "Send tracking to PayPal"}
+          </button>
+        </form>
+      )}
+      <p role="alert">{error}</p>
     </div>
   );
 }
