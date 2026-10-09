@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     whatsapp_verify_token: SecretStr | None = None
     whatsapp_access_token: SecretStr | None = None
     whatsapp_phone_number_id: str | None = None
+    resend_api_key: SecretStr | None = None
+    email_from: str | None = None
 
     @model_validator(mode="after")
     def validate_environment(self):

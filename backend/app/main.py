@@ -23,6 +23,7 @@ from app.db import get_engine, session_factory
 from app.errors import DomainError
 from app.mcp_server import create_mcp_server
 from app.models import AgentSession, Seller
+from app.routes.sellers import router as sellers_router
 from app.routes.webhooks import router as webhooks_router
 
 logger = logging.getLogger("agentshelf")
@@ -106,7 +107,7 @@ def capabilities():
         "whatsapp_configured": bool(
             settings.whatsapp_access_token and settings.whatsapp_phone_number_id
         ),
-        "seller_login_configured": False,
+        "seller_login_configured": bool(settings.resend_api_key and settings.email_from),
         "live_checkout_enabled": settings.live_checkout_enabled,
         "supported_currencies": ["USD"],
         "shipping_destinations": ["US", "GB"],
@@ -245,7 +246,13 @@ def create_app():
         allow_origins=[settings.frontend_url],
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH"],
-        allow_headers=["Content-Type", "Authorization", "Mcp-Session-Id", "Mcp-Protocol-Version"],
+        allow_headers=[
+            "Content-Type",
+            "Authorization",
+            "Mcp-Session-Id",
+            "Mcp-Protocol-Version",
+            "X-CSRF-Token",
+        ],
         expose_headers=["X-Request-ID", "Mcp-Session-Id"],
     )
     application.middleware("http")(request_context)
@@ -253,6 +260,7 @@ def create_app():
     application.add_exception_handler(RequestValidationError, invalid_request)
     application.include_router(router)
     application.include_router(webhooks_router)
+    application.include_router(sellers_router)
     application.mount("/", transport)
     return application
 

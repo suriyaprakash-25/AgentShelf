@@ -41,6 +41,26 @@ def parse_event(raw):
 
 def persist_paypal(event):
     """Insert a verified event and its job atomically, or recognize a duplicate."""
+    # Signature verification uses the full original body first. The durable inbox
+    # retains only correlation/accounting fields; shipping details belong on orders.
+    resource = event["resource"]
+    related = resource.get("supplementary_data", {}).get("related_ids", {})
+    minimal = {"id": resource["id"]}
+    if "amount" in resource:
+        minimal["amount"] = {
+            key: resource["amount"][key]
+            for key in ("currency_code", "value")
+            if key in resource["amount"]
+        }
+    if "capture_id" in resource:
+        minimal["capture_id"] = resource["capture_id"]
+    if related:
+        minimal["supplementary_data"] = {
+            "related_ids": {
+                key: related[key] for key in ("order_id", "capture_id") if key in related
+            }
+        }
+    stored = {"id": event["id"], "event_type": event["event_type"], "resource": minimal}
     with session_factory() as db, db.begin():
         inserted = db.scalar(
             insert(WebhookEvent)
@@ -49,7 +69,7 @@ def persist_paypal(event):
                 event_type=event["event_type"],
                 resource_id=event["resource"]["id"],
                 verified=True,
-                raw=event,
+                raw=stored,
             )
             .on_conflict_do_nothing()
             .returning(WebhookEvent.paypal_event_id)

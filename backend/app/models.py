@@ -31,7 +31,10 @@ class Base(DeclarativeBase):
 
 class Seller(Base):
     __tablename__ = "sellers"
-    __table_args__ = (CheckConstraint("status IN ('onboarding','active','suspended')"),)
+    __table_args__ = (
+        CheckConstraint("status IN ('onboarding','active','suspended')"),
+        UniqueConstraint("email", name="uq_sellers_email"),
+    )
     id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(100))
     whatsapp_phone: Mapped[str | None] = mapped_column(String(20), unique=True)
@@ -181,3 +184,27 @@ class Conversation(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=func.now()
     )
+
+
+class LoginChallenge(Base):
+    __tablename__ = "login_challenges"
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    email: Mapped[str] = mapped_column(String(254))
+    profile: Mapped[dict | None] = mapped_column(JSONB)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class SellerSession(Base):
+    __tablename__ = "seller_sessions"
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    seller_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sellers.id"), index=True)
+    csrf_token: Mapped[str] = mapped_column(String(64))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class RateBucket(Base):
+    __tablename__ = "rate_buckets"
+    key: Mapped[str] = mapped_column(String(128), primary_key=True)
+    used: Mapped[int] = mapped_column(Integer)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
