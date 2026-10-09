@@ -1,6 +1,10 @@
 # AgentShelf status and evidence
 
 Updated October 9, 2026. **Foundation built; pilot/release not complete.**
+The full source-checkbox audit is in `COMPLETION_REPORT.md`: all 113 checkboxes,
+12 Must requirements, 14 stories and three gates are assessed. Of the 41 production
+checks, five have local component/document evidence, 23 are partial and 13 pending;
+none of the gates or full staged Must acceptance criteria is signed off.
 Checkout: `D:\PayPal\PayPal AI Hackathon\AgentShelf`; feature branch `feat/foundations`.
 The repository was empty when cloned. No pre-existing implementation was replaced.
 The source PDF copy has SHA-256
