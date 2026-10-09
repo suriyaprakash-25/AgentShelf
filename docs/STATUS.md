@@ -61,6 +61,9 @@ Lighthouse/mobile accessibility, production runbook drills and safe demo-reset.
 CI now includes the real API/seeded Postgres browser flow; the remote GitHub workflow
 has not run. The Windows startup script now launches the worker as well as the API/UI;
 its Docker-based startup remains unverified while Docker Desktop is unavailable.
+October 9 rerun: both browser assertions passed, but installed Chrome hung during
+teardown and the runner was interrupted. The prior completed 2-test run remains the
+browser-suite evidence; this teardown issue must be resolved before release.
 
 ## Gates and external prerequisites
 
