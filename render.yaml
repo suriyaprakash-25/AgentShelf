@@ -97,4 +97,3 @@ databases:
     databaseName: agentshelf
     user: agentshelf
     plan: basic-256mb
-

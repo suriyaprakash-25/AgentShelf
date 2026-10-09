@@ -53,6 +53,59 @@ jobs:
       - run: npm run format:check
       - run: npm run build
       - run: npm audit --audit-level=high
+  browser:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: agentshelf
+          POSTGRES_PASSWORD: ci-test-only
+          POSTGRES_DB: agentshelf
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U agentshelf -d agentshelf"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      APP_ENV: local
+      DATABASE_URL: postgresql+psycopg://agentshelf:ci-test-only@127.0.0.1:5432/agentshelf
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: uv sync --frozen
+        working-directory: backend
+      - run: uv run alembic upgrade head
+        working-directory: backend
+      - run: uv run python seed.py
+        working-directory: backend
+      - run: |
+          uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/agentshelf-api.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8000/healthz; then exit 0; fi
+            sleep 1
+          done
+          echo 'API readiness failed'
+          exit 1
+        working-directory: backend
+      - run: npm ci
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npm run test:e2e
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-failure-traces
+          path: frontend/test-results/
+          retention-days: 7
   secrets:
     runs-on: ubuntu-latest
     steps:

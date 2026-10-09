@@ -24,7 +24,7 @@ def db_clean(monkeypatch):
         pytest.skip("Set TEST_DATABASE_URL to an isolated database ending in _test")
     if not url.rsplit("/", 1)[-1].endswith("_test"):
         pytest.fail("Tests require a dedicated database ending in _test")
-    engine = create_engine(url, pool_size=25, max_overflow=0)
+    engine = create_engine(url, pool_size=25, max_overflow=0, connect_args={"connect_timeout": 5})
     Base.metadata.create_all(engine)
     with engine.begin() as connection:
         for table in reversed(Base.metadata.sorted_tables):

@@ -5,7 +5,7 @@
 Prerequisites: Python 3.12, uv, Node 22, Docker with a working engine.
 PowerShell from the repository root: `./scripts/start-local.ps1`.
 The script installs locked dependencies, starts Postgres, migrates, seeds and runs
-the API and browser app. Logs and process IDs live in ignored `work/`.
+the API, browser app and job worker. Logs and process IDs live in ignored `work/`.
 
 Manual equivalent: copy `.env.example` to `.env`, `docker compose up -d --wait db`,
 then in `backend` run `uv sync --frozen`, `uv run --env-file ../.env alembic upgrade head`,
@@ -47,6 +47,9 @@ without additional processing. Do not bypass signature verification for a replay
 Worker startup: `uv run --env-file ../.env python worker.py` in backend.
 Jobs retry at most five times and store only error codes. Inspect failed job codes in
 Postgres until the authenticated operations screen is implemented.
+Handler exceptions roll back their database writes before scheduling the retry.
+Unexpected handler errors use `JOB_HANDLER_FAILED`; sensitive exception text is excluded.
+Database connection/commit failures still surface to the process supervisor.
 Meta delivery is at-least-once after network uncertainty; do not claim exactly-once texts.
 
 ## Secrets and live release

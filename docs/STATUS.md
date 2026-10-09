@@ -1,6 +1,6 @@
 # AgentShelf status and evidence
 
-Updated October 8, 2026. **Foundation built; pilot/release not complete.**
+Updated October 9, 2026. **Foundation built; pilot/release not complete.**
 Checkout: `D:\PayPal\PayPal AI Hackathon\AgentShelf`; feature branch `feat/foundations`.
 The repository was empty when cloned. No pre-existing implementation was replaced.
 The source PDF copy has SHA-256
@@ -11,7 +11,8 @@ matching the supplied original. A user-requested memory note points to this proj
 
 | Evidence | Result | Boundary |
 | --- | --- | --- |
-| Backend pytest, Python 3.12.10 | 113 passed | Real Postgres 18.4; provider calls mocked where marked |
+| Backend pytest, Python 3.12.10 | 115 passed | Real Postgres 18.4; provider calls mocked where marked |
+| Worker handler rollback, retry limit and concurrent claims | Pass | Real Postgres savepoints and SKIP LOCKED; no external delivery proof |
 | Ruff lint and format | Pass | Locked Ruff 0.16.10 |
 | Alembic up/down/up and schema check | Pass | Dedicated test DB; local DB also has no drift |
 | Stock 1 / 20 distinct concurrent buyers | Exactly one checkout succeeds | Database invariant; not 20 real PayPal payments |
@@ -57,6 +58,9 @@ deployed auth/CORS/CSP, shared limits, secret history scan, all resource ownersh
 failure admin UI, expiry and automatic reconciliation, provider outages/fallbacks,
 backups, Sentry/alerts, nightly provider tests, model/agent/performance targets,
 Lighthouse/mobile accessibility, production runbook drills and safe demo-reset.
+CI now includes the real API/seeded Postgres browser flow; the remote GitHub workflow
+has not run. The Windows startup script now launches the worker as well as the API/UI;
+its Docker-based startup remains unverified while Docker Desktop is unavailable.
 
 ## Gates and external prerequisites
 

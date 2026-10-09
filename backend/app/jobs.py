@@ -120,10 +120,14 @@ def run_one():
                     raise DomainError("UNKNOWN_JOB", "This job type has no handler.")
                 job.status = "done"
                 job.last_error = None
-        except DomainError as exc:
+        except Exception as exc:
+            # The savepoint rolls back handler writes before retry metadata is saved.
+            # Unexpected payload/provider errors must not poison the queue indefinitely.
+            # Never persist exception text or a traceback containing customer/provider data.
+            code = exc.code if isinstance(exc, DomainError) else "JOB_HANDLER_FAILED"
             job.attempts += 1
             job.status = "failed" if job.attempts >= 5 else "queued"
-            job.last_error = exc.code  # Codes only; provider payloads can contain personal data.
+            job.last_error = code
             job.run_after = utcnow() + timedelta(seconds=min(300, 2**job.attempts))
-            logger.warning('{"event":"job_retry","code":"%s"}', exc.code)
+            logger.warning('{"event":"job_retry","code":"%s"}', code)
         return True
