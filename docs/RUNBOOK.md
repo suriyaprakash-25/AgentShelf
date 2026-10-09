@@ -54,6 +54,28 @@ Meta delivery is at-least-once after network uncertainty; do not claim exactly-o
 
 ## Secrets and live release
 
+## Email sign-in and dashboard configuration
+
+Configure `RESEND_API_KEY` and a verified sender in `EMAIL_FROM`; register the same
+values as managed secrets on staging. The adapter uses Resend's bounded email API.
+No email or authentication bypass is provided when credentials are missing.
+Web onboarding verifies the sign-in email with a single-use 15-minute link before
+creating a store. It does not verify ownership of the submitted PayPal email or
+payment receiving eligibility. Links use a URL fragment, consumed by a POST, so
+access logs do not receive the secret. Seller session values are hashed in Postgres.
+Cookies are HttpOnly/Secure/Lax outside `APP_ENV=local`; local HTTP is development only.
+
+For deployed credentialed cookies, use a same-origin API proxy or frontend/API
+subdomains sharing your own site. Separate unrelated hosts will not reliably send
+SameSite=Lax cookies. `FRONTEND_URL` must exactly match the browser origin; configure
+the proxy/CORS and verify the real browser flow before release. Seller writes require
+both that Origin and the session-bound CSRF token from `/api/me`.
+
+The dashboard currently uses AG Grid Community, with a custom theme, filters,
+sorting, pagination and current-page CSV exports. It is not an AG Studio integration
+or a claim that the sponsor checklist passes. Session/link expiry cleanup and a full
+policy/merchant verification workflow remain release work.
+
 Rotate credentials in the provider console and deployment secret store, restart the
 API/worker and run readiness plus a sandbox transaction. No secret value goes into
 logs, screenshots or source. Sandbox and live have different apps/webhook IDs/databases.

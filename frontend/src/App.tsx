@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import {
   Link,
   NavLink,
@@ -24,6 +24,13 @@ import {
   type Store,
 } from "./api";
 import "./styles.css";
+
+const Dashboard = lazy(() =>
+  import("./Seller").then((m) => ({ default: m.SellerDashboard })),
+);
+const Onboarding = lazy(() =>
+  import("./Seller").then((m) => ({ default: m.SellerOnboarding })),
+);
 
 export default function App() {
   const [cap, setCap] = useState<Capabilities | null>(null);
@@ -54,26 +61,34 @@ export default function App() {
         </Link>
       </header>
       <main id="main">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/s/:slug" element={<StorePage />} />
-          <Route
-            path="/playground"
-            element={<Playground capabilities={cap} />}
-          />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/receipt" element={<Receipt />} />
-          <Route
-            path="*"
-            element={
-              <div className="page">
-                <h1>Page not found</h1>
-                <Link to="/">Back to AgentShelf</Link>
-              </div>
-            }
-          />
-        </Routes>
+        <Suspense
+          fallback={
+            <div className="page" role="status">
+              Loading your workspace…
+            </div>
+          }
+        >
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/s/:slug" element={<StorePage />} />
+            <Route
+              path="/playground"
+              element={<Playground capabilities={cap} />}
+            />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/receipt" element={<Receipt />} />
+            <Route
+              path="*"
+              element={
+                <div className="page">
+                  <h1>Page not found</h1>
+                  <Link to="/">Back to AgentShelf</Link>
+                </div>
+              }
+            />
+          </Routes>
+        </Suspense>
       </main>
       <footer>
         <Link className="brand" to="/">
@@ -547,56 +562,6 @@ function Playground({ capabilities }: { capabilities: Capabilities | null }) {
   );
 }
 
-function Dashboard() {
-  return (
-    <div className="page narrow">
-      <span className="eyebrow">SELLER DASHBOARD</span>
-      <h1>
-        Your shop.
-        <br />
-        Your control.
-      </h1>
-      <div className="panel">
-        <h2>Seller sign-in is being connected.</h2>
-        <p>
-          Magic links, authenticated product management and order tables are the
-          next roadmap steps. No seller orders or personal details are publicly
-          accessible here.
-        </p>
-        <Link className="button" to="/s/meera-jaipur">
-          View the public demo shop <ArrowRight size={17} />
-        </Link>
-      </div>
-    </div>
-  );
-}
-function Onboarding() {
-  return (
-    <div className="page narrow">
-      <span className="eyebrow">FOR INDEPENDENT SELLERS</span>
-      <h1>
-        Make room for
-        <br />
-        your next chapter.
-      </h1>
-      <div className="panel">
-        <h2>Onboarding is being connected.</h2>
-        <p>
-          Seller onboarding will collect your store details, country, consent
-          and PayPal business account. Payment eligibility is verified
-          separately for each merchant.
-        </p>
-        <p className="notice">
-          The pilot is under development. This page does not collect or store
-          your personal information yet.
-        </p>
-        <Link className="text-link" to="/s/meera-jaipur">
-          Explore a demo storefront <ArrowRight size={16} />
-        </Link>
-      </div>
-    </div>
-  );
-}
 function Receipt() {
   const [params] = useSearchParams();
   const [result, setResult] = useState<{

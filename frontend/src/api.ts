@@ -41,14 +41,18 @@ export async function api<T>(
   path: string,
   body?: unknown,
   signal?: AbortSignal,
+  options?: { method?: string; csrf?: string },
 ): Promise<T> {
   const response = await fetch(base + path, {
     signal,
     credentials: "include",
     ...(body !== undefined
       ? {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: options?.method || "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(options?.csrf ? { "X-CSRF-Token": options.csrf } : {}),
+          },
           body: JSON.stringify(body),
         }
       : {}),

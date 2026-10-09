@@ -897,3 +897,52 @@ select {
     padding-top: 25px;
   }
 }
+.seller-form {
+  display: grid;
+  gap: 1rem;
+}
+.seller-form label {
+  display: grid;
+  gap: 0.4rem;
+}
+.seller-form input,
+.seller-form textarea {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #deded1;
+  border-radius: 0.5rem;
+  background: #fff;
+  font: inherit;
+}
+.seller-form .consent-label {
+  display: flex;
+  align-items: flex-start;
+}
+.consent-label input {
+  width: auto;
+}
+.seller-grid {
+  height: 380px;
+  width: 100%;
+  margin: 1rem 0;
+  overflow: hidden;
+}
+.seller-toolbar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.seller-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+.seller-actions .panel {
+  display: grid;
+  gap: 0.7rem;
+}
+.seller-form textarea {
+  min-height: 100px;
+}

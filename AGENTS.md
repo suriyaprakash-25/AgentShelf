@@ -11,4 +11,9 @@ Sandbox stays isolated and is the judge's payment environment. Live checkout is 
 Use branches and reviewable commits, keep business rules outside route handlers,
 store money as integer minor units, and redact secrets and personal data from logs.
 Run meaningful tests with real Postgres for locking, constraints and migrations.
+The user has no provider credentials yet and explicitly requests building the full
+codebase first. Implement adapters and workflows with controlled test responses;
+never expose test authentication or fake delivery in the actual application.
+Keep external provider, deployment and merchant eligibility gates unaccepted until
+real credentials and acceptance evidence are available. Track work in DELIVERY_CHECKLIST.md.
 Do not publish credentials, contact people, purchase services, or submit the entry.
