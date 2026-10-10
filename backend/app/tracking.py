@@ -25,6 +25,15 @@ def track(seller_id, order_id, carrier, number):
             raise DomainError(
                 "PAYMENT_REQUIRED", "Only a confirmed paid order can be shipped.", 409
             )
+        if order.reconciliation_error in {
+            "PARTIAL_REFUND_REVIEW",
+            "DISPUTE_OPEN",
+            "DISPUTE_RESOLUTION_REVIEW",
+            "REVERSAL_REVIEW_REQUIRED",
+        }:
+            raise DomainError(
+                "PAYMENT_REVIEW_REQUIRED", "Resolve this payment review before fulfilment.", 409
+            )
         if order.status == "shipped":
             if order.carrier == label and order.tracking_number == number:
                 return {"status": "shipped", "carrier": label, "tracking_number": number}

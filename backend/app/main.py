@@ -2,35 +2,41 @@
 
 import json
 import logging
-import time
 import uuid
-from collections import defaultdict, deque
 from contextlib import asynccontextmanager
+from pathlib import Path
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from mcp.server.transport_security import TransportSecuritySettings
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select, text
 from sqlalchemy.exc import SQLAlchemyError
+from starlette.concurrency import run_in_threadpool
 
-from app import orders, quotes
+from app import observability, orders, quotes, rate_limits
 from app.config import get_settings
 from app.db import get_engine, session_factory
 from app.errors import DomainError
 from app.mcp_server import create_mcp_server
 from app.models import AgentSession, Seller
+from app.routes.analytics import router as analytics_router
+from app.routes.listings import router as listings_router
+from app.routes.operations import router as operations_router
+from app.routes.playground import router as playground_router
 from app.routes.sellers import router as sellers_router
 from app.routes.webhooks import router as webhooks_router
 
 logger = logging.getLogger("agentshelf")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
+logging.getLogger("uvicorn.access").disabled = True
 settings = get_settings()
 router = APIRouter()
-_windows = defaultdict(deque)
+FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 
 
 async def request_context(request, call_next):
@@ -38,28 +44,37 @@ async def request_context(request, call_next):
     request_id = str(uuid.uuid4())
     request.state.request_id = request_id
     ip = request.client.host if request.client else "unknown"
-    now = time.monotonic()
-    bucket = _windows[ip]
-    while bucket and bucket[0] < now - 60:
-        bucket.popleft()
-    if len(bucket) >= 60 and request.url.path.startswith(("/mcp", "/api/playground")):
-        response = JSONResponse(
-            {"error": {"code": "RATE_LIMITED", "message": "Wait a minute before trying again."}},
-            status_code=429,
-            headers={"Retry-After": "60"},
-        )
-    else:
-        bucket.append(now)
+    try:
+        if request.url.path.startswith(("/mcp", "/api/playground")) and request.method != "OPTIONS":
+            scope = "mcp" if request.url.path.startswith("/mcp") else "playground"
+            await run_in_threadpool(rate_limits.consume_ip, ip, scope)
         response = await call_next(request)
-    # Bound process-local bookkeeping. A shared limiter is a later hardening requirement.
-    if len(_windows) > 10000:
-        for key in list(_windows):
-            if not _windows[key] or _windows[key][-1] < now - 60:
-                del _windows[key]
+    except DomainError as exc:
+        response = JSONResponse(
+            exc.payload(), status_code=exc.status, headers={"Retry-After": "60"}
+        )
+    except SQLAlchemyError:
+        observability.report("DATABASE_UNAVAILABLE")
+        response = JSONResponse(
+            {"error": {"code": "SERVICE_UNAVAILABLE", "message": "Please try again later."}},
+            status_code=503,
+        )
+    except Exception:
+        observability.report("REQUEST_FAILED")
+        logger.error('{"event":"request_failed","request_id":"%s"}', request_id)
+        response = JSONResponse(
+            {"error": {"code": "SERVICE_UNAVAILABLE", "message": "Please try again later."}},
+            status_code=500,
+        )
     response.headers["X-Request-ID"] = request_id
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "no-referrer"
-    response.headers["Content-Security-Policy"] = "frame-ancestors 'none'"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' "
+        "https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; "
+        "base-uri 'self'; form-action 'self'"
+    )
     logger.info(
         json.dumps(
             {
@@ -115,7 +130,7 @@ def capabilities():
 
 
 @router.get("/api/stores/{slug}")
-def store(slug: str):
+def store(slug: str, after: uuid.UUID | None = None):
     """Return public store information with no merchant account details."""
     with session_factory() as db:
         seller = db.scalar(
@@ -123,24 +138,33 @@ def store(slug: str):
         )
         if not seller:
             raise DomainError("STORE_NOT_FOUND", "This store is unavailable.", 404)
+        items = quotes.search_products(db, limit=10, store_slug=slug, after=after)
         return {
             "name": seller.name,
             "slug": seller.store_slug,
             "country": seller.country,
             "currency": seller.currency,
             "mcp_url": settings.public_api_url + "/mcp",
-            "products": quotes.search_products(db, limit=10, store_slug=slug),
+            "products": items,
+            "next_cursor": items[-1]["product_id"] if len(items) == 10 else None,
         }
 
 
 @router.get("/api/products")
-def products(query: str = "", limit: int = 5, ship_to_country: str | None = None):
+def products(
+    query: str = "",
+    limit: int = 5,
+    ship_to_country: str | None = None,
+    after: uuid.UUID | None = None,
+):
     """Expose the same search semantics as the MCP tool."""
     with session_factory() as db:
+        items = quotes.search_products(
+            db, query=query, limit=limit, ship_to_country=ship_to_country, after=after
+        )
         return {
-            "products": quotes.search_products(
-                db, query=query, limit=limit, ship_to_country=ship_to_country
-            )
+            "products": items,
+            "next_cursor": items[-1]["product_id"] if len(items) == limit else None,
         }
 
 
@@ -236,6 +260,12 @@ def create_app():
 
     @asynccontextmanager
     async def lifespan(application):
+        observability.setup()
+        if (
+            settings.app_env in {"staging", "production"}
+            and not (FRONTEND_DIST / "index.html").is_file()
+        ):
+            raise RuntimeError("Build frontend assets before starting the deployed web service")
         async with server.session_manager.run():
             yield
         get_engine().dispose()
@@ -261,6 +291,26 @@ def create_app():
     application.include_router(router)
     application.include_router(webhooks_router)
     application.include_router(sellers_router)
+    application.include_router(analytics_router)
+    application.include_router(listings_router)
+    application.include_router(playground_router)
+    application.include_router(operations_router)
+    if (FRONTEND_DIST / "index.html").is_file():
+
+        def frontend_page():
+            return FileResponse(FRONTEND_DIST / "index.html", headers={"Cache-Control": "no-store"})
+
+        for path in (
+            "/",
+            "/playground",
+            "/dashboard",
+            "/onboarding",
+            "/operations",
+            "/receipt",
+            "/s/{slug}",
+        ):
+            application.add_api_route(path, frontend_page, methods=["GET"], include_in_schema=False)
+        application.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
     application.mount("/", transport)
     return application
 

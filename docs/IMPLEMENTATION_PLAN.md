@@ -23,7 +23,7 @@ guide's sandbox-only scope. No claim of error-free or globally eligible payments
 - Anthropic vision and tool calling behind `llm.py`; provider model name is configured
   and locked only after the five-photo spike passes. SDK retries must respect latency limits.
 - `paypal.py` alone makes PayPal calls. `whatsapp.py` alone calls Meta.
-- R2-compatible image storage; Render web service, worker, static site and paid Postgres.
+- R2-compatible image storage; Render same-origin Docker web service, Docker worker and paid Postgres.
 - Email magic links via a transactional email adapter; provider defaults to Resend.
 - Preserve the guide's four tool names and money-string outputs. Require a session ID
   on quote, checkout and status to bind capabilities to buyers. Buyer sessions carry
@@ -169,3 +169,13 @@ contact reviewers. Secret values belong in local ignored env files or managed se
 Global access is a product goal. USD plus US/UK shipping is the user's initial commerce
 policy, not a claim that all countries can receive funds. Broad destination/currency
 support and marketplace live onboarding require further verified merchant rules.
+
+## October 10 implementation checkpoint
+
+The working checklist now records media/listing publication, real MCP buyer chat,
+WhatsApp onboarding and catalog/fulfilment commands, durable capture intent,
+reconciliation, refund/dispute review, operator UI and deployment/maintenance code.
+See STATUS.md for exact test evidence and remaining gates. Configuration does not
+establish provider acceptance. Reservation release currently requires PayPal VOIDED
+proof; resolve the difference from the source 15-minute policy before Gate 2.
+The deployed frontend and API must share one HTTPS origin to preserve secure sessions.

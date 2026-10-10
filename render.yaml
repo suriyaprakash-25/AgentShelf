@@ -3,11 +3,10 @@
 services:
   - type: web
     name: agentshelf-api
-    runtime: python
+    runtime: docker
     plan: starter
-    buildCommand: pip install uv && cd backend && uv sync --frozen --no-dev
-    preDeployCommand: cd backend && uv run --no-dev alembic upgrade head
-    startCommand: cd backend && uv run --no-dev uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    dockerfilePath: ./Dockerfile
+    preDeployCommand: alembic upgrade head
     healthCheckPath: /healthz
     envVars:
       - key: PYTHON_VERSION
@@ -30,6 +29,20 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: WHATSAPP_PAID_TEMPLATE
+        sync: false
+      - key: MEDIA_BACKEND
+        value: r2
+      - key: R2_ENDPOINT
+        sync: false
+      - key: R2_BUCKET
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
       - key: WHATSAPP_APP_SECRET
         sync: false
       - key: RESEND_API_KEY
@@ -44,10 +57,10 @@ services:
         sync: false
   - type: worker
     name: agentshelf-worker
-    runtime: python
+    runtime: docker
     plan: starter
-    buildCommand: pip install uv && cd backend && uv sync --frozen --no-dev
-    startCommand: cd backend && uv run --no-dev python worker.py
+    dockerfilePath: ./Dockerfile
+    dockerCommand: python worker.py
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.10
@@ -69,33 +82,28 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: WHATSAPP_PAID_TEMPLATE
+        sync: false
+      - key: MEDIA_BACKEND
+        value: r2
+      - key: R2_ENDPOINT
+        sync: false
+      - key: R2_BUCKET
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
       - key: WHATSAPP_ACCESS_TOKEN
         sync: false
       - key: WHATSAPP_PHONE_NUMBER_ID
         sync: false
-  - type: web
-    name: agentshelf-web
-    runtime: static
-    rootDir: frontend
-    buildCommand: npm ci && npm run build
-    staticPublishPath: dist
-    envVars:
-      - key: VITE_API_URL
-        sync: false
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    headers:
-      - path: /*
-        name: X-Content-Type-Options
-        value: nosniff
-      - path: /*
-        name: Referrer-Policy
-        value: no-referrer
-      - path: /*
-        name: Content-Security-Policy
-        value: "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://agentshelf-api.onrender.com; frame-ancestors 'none'"
 databases:
   - name: agentshelf-staging
     databaseName: agentshelf

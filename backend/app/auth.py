@@ -97,6 +97,21 @@ def redeem(token):
             db.flush()
         if seller.status != "active":
             raise DomainError("SELLER_UNAVAILABLE", "This seller account is unavailable.", 403)
+        phone = (challenge.profile or {}).get("whatsapp_phone")
+        if phone:
+            # A Meta sender can claim an email, but cannot bind it until email verification.
+            if seller.whatsapp_phone and seller.whatsapp_phone != phone:
+                raise DomainError(
+                    "PHONE_ALREADY_BOUND", "Manage the existing phone from your dashboard.", 409
+                )
+            other = db.scalar(
+                select(Seller).where(Seller.whatsapp_phone == phone, Seller.id != seller.id)
+            )
+            if other:
+                raise DomainError(
+                    "PHONE_ALREADY_BOUND", "This phone is linked to another store.", 409
+                )
+            seller.whatsapp_phone = phone
         challenge.consumed_at = utcnow()
         db.add(
             SellerSession(

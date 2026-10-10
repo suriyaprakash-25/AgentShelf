@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import { Link } from "react-router-dom";
 import { AgGridReact } from "ag-grid-react";
 import {
@@ -11,6 +18,9 @@ import {
   type ColDef,
 } from "ag-grid-community";
 import { api } from "./api";
+import { ListingStudio } from "./ListingStudio";
+
+const AnalyticsStudio = lazy(() => import("./AnalyticsStudio"));
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -24,7 +34,12 @@ const theme = themeQuartz.withParams({
   foregroundColor: "#252b22",
   borderColor: "#deded1",
 });
-type Me = { name: string; store_slug: string; csrf_token: string };
+type Me = {
+  name: string;
+  store_slug: string;
+  csrf_token: string;
+  is_operator: boolean;
+};
 type Product = {
   id: string;
   title: string;
@@ -98,6 +113,7 @@ function SignInForm() {
 }
 
 export function SellerDashboard() {
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const [me, setMe] = useState<Me | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -206,6 +222,7 @@ export function SellerDashboard() {
       <h1>{me.name}</h1>
       <div className="seller-toolbar">
         <Link to={`/s/${me.store_slug}`}>Open public store</Link>
+        {me.is_operator && <Link to="/operations">Operations</Link>}
         <button
           className="button secondary"
           disabled={busy}
@@ -224,6 +241,18 @@ export function SellerDashboard() {
         </button>
       </div>
       <p role="alert">{error}</p>
+      <button
+        className="button secondary"
+        onClick={() => setShowAnalytics((v) => !v)}
+      >
+        {showAnalytics ? "Close shop analytics" : "Open shop analytics"}
+      </button>
+      {showAnalytics && (
+        <Suspense fallback={<p role="status">Loading analytics�</p>}>
+          <AnalyticsStudio csrf={me.csrf_token} />
+        </Suspense>
+      )}
+      <ListingStudio csrf={me.csrf_token} refresh={() => load()} />
       <div className="panel">
         <h2>Create a product draft</h2>
         <form onSubmit={create} className="seller-form">
@@ -423,6 +452,7 @@ export function SellerDashboard() {
 }
 
 type Detail = {
+  payment_review: string | null;
   title: string;
   qty: number;
   carrier: string | null;
@@ -485,6 +515,12 @@ function Fulfilment({
       </button>
       {detail && (
         <>
+          {detail.payment_review && (
+            <p role="status">
+              Payment review: {detail.payment_review}. Contact your operator
+              before fulfilment.
+            </p>
+          )}
           <p>
             {detail.title} × {detail.qty}
           </p>

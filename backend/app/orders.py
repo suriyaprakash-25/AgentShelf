@@ -6,7 +6,17 @@ from app import paypal
 from app.db import session_factory
 from app.errors import DomainError
 from app.guards import parse_id
-from app.models import AgentSession, Job, Order, OrderEvent, Product, Quote, Seller, utcnow
+from app.models import (
+    AgentSession,
+    Job,
+    Order,
+    OrderEvent,
+    PaymentAdjustment,
+    Product,
+    Quote,
+    Seller,
+    utcnow,
+)
 
 TRANSITIONS = {
     ("checkout_created", "approve"): "approved",
@@ -190,6 +200,7 @@ def apply_capture(db, order, data):
     order.ship_to = unit.get("shipping")
     if status == "COMPLETED":
         transition(db, order, "capture_completed", "paypal")
+        order.reconciliation_error = None
     elif status == "PENDING" and order.status == "approved":
         transition(db, order, "capture_pending", "paypal")
     elif status in {"DECLINED", "FAILED"}:
@@ -203,7 +214,7 @@ def apply_capture(db, order, data):
 
 
 def capture_on_return(paypal_order_id):
-    """Verify approval using PayPal, then capture once under the order lock."""
+    """Persist verified capture intent before calling the provider under a second lock."""
     with session_factory() as db, db.begin():
         order = db.scalar(
             select(Order).where(Order.paypal_order_id == paypal_order_id).with_for_update()
@@ -237,6 +248,37 @@ def capture_on_return(paypal_order_id):
             )
         if order.status == "checkout_created":
             transition(db, order, "approve", "buyer")
+    # A timeout, crash or failed re-read cannot roll the approval back to a releasable state.
+    return capture_after_intent(paypal_order_id)
+
+
+def capture_after_intent(paypal_order_id):
+    with session_factory() as db, db.begin():
+        order = db.scalar(
+            select(Order).where(Order.paypal_order_id == paypal_order_id).with_for_update()
+        )
+        if order.status in {"paid", "shipped", "refunded"}:
+            return {"order_id": str(order.id), "status": order.status}
+        if order.status not in {"approved", "capture_pending"}:
+            raise DomainError("CHECKOUT_CLOSED", "This checkout is closed.", 409)
+        data = paypal.read_order(paypal_order_id)
+        if apply_capture(db, order, data):
+            return {"order_id": str(order.id), "status": order.status}
+        if data.get("status") != "APPROVED":
+            raise DomainError("CAPTURE_UNCERTAIN", "Keep this reservation for reconciliation.", 502)
+        unit = data["purchase_units"][0]
+        quote = db.get(Quote, order.quote_id)
+        seller = db.get(Seller, order.seller_id)
+        if (
+            unit.get("shipping", {}).get("address", {}).get("country_code") != quote.ship_to_country
+            or unit.get("amount", {}).get("currency_code") != quote.currency
+            or paypal.parse_money(unit.get("amount", {}).get("value")) != quote.total_minor
+            or unit.get("payee", {}).get("email_address", "").casefold()
+            != seller.paypal_email.casefold()
+        ):
+            raise DomainError(
+                "PAYMENT_MISMATCH", "Approved payment changed. Review before capture.", 409
+            )
         try:
             data = paypal.capture_order(order)
         except DomainError:
@@ -261,6 +303,18 @@ def get_order_status(db, order_id, session_id):
         "paid_at": order.paid_at.isoformat() if order.paid_at else None,
         "carrier": order.carrier,
         "tracking_number": order.tracking_number,
+        "payment_review": order.reconciliation_error,
+        "refunded_amount": paypal.money(
+            int(
+                db.scalar(
+                    select(func.coalesce(func.sum(PaymentAdjustment.amount_minor), 0)).where(
+                        PaymentAdjustment.order_id == order.id,
+                        PaymentAdjustment.kind == "refund",
+                        PaymentAdjustment.status == "COMPLETED",
+                    )
+                )
+            )
+        ),
     }
 
 
@@ -277,8 +331,10 @@ def cancel_checkout(paypal_order_id):
             if not apply_capture(db, order, data):
                 if data.get("status") == "APPROVED":
                     transition(db, order, "approve", "paypal")
-                elif data.get("status") in {"CREATED", "PAYER_ACTION_REQUIRED", "VOIDED"}:
+                elif data.get("status") == "VOIDED":
                     transition(db, order, "cancel", "buyer")
+                elif data.get("status") in {"CREATED", "PAYER_ACTION_REQUIRED"}:
+                    order.reconciliation_error = "CANCELLATION_UNCONFIRMED"
                 else:
                     raise DomainError(
                         "PAYMENT_STATUS_UNKNOWN", "Recheck the payment before cancellation.", 409

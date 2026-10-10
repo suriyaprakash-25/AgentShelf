@@ -5,7 +5,7 @@ from datetime import timedelta
 
 from sqlalchemy import select
 
-from app import orders, paypal, whatsapp
+from app import observability, orders, paypal, whatsapp
 from app.db import session_factory
 from app.errors import DomainError
 from app.models import Job, Order, Quote, Seller, WebhookEvent, utcnow
@@ -17,6 +17,14 @@ def process_paypal(db, job):
     """Re-read the provider order to avoid trusting stale/out-of-order event payloads."""
     event = db.get(WebhookEvent, job.payload["event_id"])
     if not event or not event.verified or event.processed_at:
+        return
+    if event.event_type.startswith("CUSTOMER.DISPUTE.") or event.event_type in {
+        "PAYMENT.CAPTURE.REFUNDED",
+        "PAYMENT.CAPTURE.REVERSED",
+    }:
+        from app.payment_adjustments import process
+
+        process(db, event)
         return
     resource = event.raw["resource"]
     order_id = resource.get("supplementary_data", {}).get("related_ids", {}).get("order_id")
@@ -39,20 +47,6 @@ def process_paypal(db, job):
         )
     data = paypal.read_order(order.paypal_order_id)
     orders.apply_capture(db, order, data)
-    if event.event_type in {
-        "PAYMENT.CAPTURE.REFUNDED",
-        "PAYMENT.CAPTURE.REVERSED",
-    } and order.status in {"paid", "shipped"}:
-        # Partial refunds require separate accounting; do not label the order fully refunded.
-        amount = resource.get("amount", {})
-        if (
-            amount.get("currency_code") != order.currency
-            or paypal.parse_money(amount.get("value")) != order.amount_minor
-        ):
-            raise DomainError("PARTIAL_REFUND_REVIEW", "Refund needs manual reconciliation.", 409)
-        orders.transition(db, order, "refund", "webhook")
-    if event.event_type == "CUSTOMER.DISPUTE.CREATED":
-        raise DomainError("DISPUTE_REVIEW_REQUIRED", "A merchant must review this dispute.", 409)
     event.processed_at = utcnow()
 
 
@@ -79,12 +73,13 @@ def process_notification(db, job):
         raise DomainError("SELLER_CHANNEL_MISSING", "Seller has no WhatsApp destination.", 409)
     quote = db.get(Quote, order.quote_id)
     # This is a fulfilment notification, not a model input or a log entry.
-    message = (
-        f"Paid order #{str(order.id)[:8]}: {quote.title} x{quote.qty}. "
-        f"{paypal.money(order.amount_minor)} {order.currency}. "
-        f"Ship to: {order.ship_to}. Reply with your tracking details in the dashboard."
+    whatsapp.send_paid(
+        seller.whatsapp_phone,
+        str(order.id)[:8],
+        f"{quote.title} x{quote.qty}",
+        f"{paypal.money(order.amount_minor)} {order.currency}",
+        str(order.ship_to),
     )
-    whatsapp.send_text(seller.whatsapp_phone, message)
 
 
 def run_one():
@@ -105,17 +100,27 @@ def run_one():
             with db.begin_nested():
                 if job.kind == "paypal_event":
                     process_paypal(db, job)
+                elif job.kind == "reconcile_order":
+                    from app.guards import parse_id
+                    from app.reconciliation import reconcile
+
+                    reconcile(parse_id(job.payload["order_id"]))
+                elif job.kind == "listing_draft":
+                    from app.listing_workflow import process
+
+                    process(db, job)
                 elif job.kind == "paid_notification":
                     process_notification(db, job)
                 elif job.kind == "whatsapp_message":
-                    phone = job.payload.get("from")
-                    if not isinstance(phone, str) or not phone.isdigit():
-                        raise DomainError("INVALID_SENDER", "Invalid WhatsApp sender.")
-                    whatsapp.send_text(
-                        phone,
-                        "Welcome to AgentShelf. Seller onboarding is under development. "
-                        "Visit our public demo store to explore the pilot.",
-                    )
+                    from app.whatsapp_workflow import process
+
+                    process(db, job)
+                elif job.kind == "whatsapp_draft_reply":
+                    from app.whatsapp_workflow import draft_reply
+
+                    draft_reply(db, job)
+                elif job.kind == "whatsapp_send":
+                    whatsapp.send_text(job.payload["phone"], job.payload["text"])
                 else:
                     raise DomainError("UNKNOWN_JOB", "This job type has no handler.")
                 job.status = "done"
@@ -125,9 +130,25 @@ def run_one():
             # Unexpected payload/provider errors must not poison the queue indefinitely.
             # Never persist exception text or a traceback containing customer/provider data.
             code = exc.code if isinstance(exc, DomainError) else "JOB_HANDLER_FAILED"
+            if code == "CHANNEL_ORDER_WAIT":
+                job.run_after = utcnow() + timedelta(seconds=1)
+                return True
             job.attempts += 1
             job.status = "failed" if job.attempts >= 5 else "queued"
             job.last_error = code
             job.run_after = utcnow() + timedelta(seconds=min(300, 2**job.attempts))
             logger.warning('{"event":"job_retry","code":"%s"}', code)
+            if job.status == "failed":
+                observability.report(code)
+                if job.kind == "listing_draft" and job.payload.get("whatsapp_phone"):
+                    db.add(
+                        Job(
+                            kind="whatsapp_draft_reply",
+                            dedupe_key=f"failed-reply:{job.id}",
+                            payload={
+                                "phone": job.payload["whatsapp_phone"],
+                                "listing_id": job.payload["listing_id"],
+                            },
+                        )
+                    )
         return True

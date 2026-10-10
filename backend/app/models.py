@@ -48,6 +48,7 @@ class Seller(Base):
     shipping_rates: Mapped[dict] = mapped_column(JSONB, default=dict)
     live_eligible: Mapped[bool] = mapped_column(default=False)
     paypal_merchant_id: Mapped[str | None] = mapped_column(String(64))
+    is_operator: Mapped[bool] = mapped_column(default=False, server_default="false")
 
 
 class Product(Base):
@@ -88,6 +89,10 @@ class AgentSession(Base):
     budget_minor: Mapped[int] = mapped_column(BigInteger)
     spent_minor: Mapped[int] = mapped_column(BigInteger, default=0)
     currency: Mapped[str] = mapped_column(String(3), default="USD")
+    chat_history: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    pending_quote_id: Mapped[uuid.UUID | None] = mapped_column(UUID)
+    chat_lease: Mapped[uuid.UUID | None] = mapped_column(UUID)
+    chat_lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
@@ -136,6 +141,10 @@ class Order(Base):
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     carrier: Mapped[str | None] = mapped_column(String(100))
     tracking_number: Mapped[str | None] = mapped_column(String(100))
+    reconcile_after: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, server_default=func.now(), index=True
+    )
+    reconciliation_error: Mapped[str | None] = mapped_column(String(80))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
@@ -174,6 +183,9 @@ class Job(Base):
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     run_after: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     last_error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, server_default=func.now()
+    )
 
 
 class Conversation(Base):
@@ -208,3 +220,51 @@ class RateBucket(Base):
     key: Mapped[str] = mapped_column(String(128), primary_key=True)
     used: Mapped[int] = mapped_column(Integer)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class MediaAsset(Base):
+    __tablename__ = "media_assets"
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
+    seller_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sellers.id"), index=True)
+    product_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("products.id"), index=True)
+    object_key: Mapped[str] = mapped_column(String(200), unique=True)
+    sha256: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class ListingRequest(Base):
+    __tablename__ = "listing_requests"
+    __table_args__ = (CheckConstraint("status IN ('queued','drafted','failed','published')"),)
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
+    seller_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sellers.id"), index=True)
+    media_ids: Mapped[list] = mapped_column(JSONB)
+    caption: Mapped[str] = mapped_column(String(600), default="")
+    status: Mapped[str] = mapped_column(String(20), default="queued")
+    draft: Mapped[dict | None] = mapped_column(JSONB)
+    product_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("products.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class OpsAudit(Base):
+    __tablename__ = "ops_audit"
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
+    actor_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sellers.id"))
+    action: Mapped[str] = mapped_column(String(60))
+    resource_id: Mapped[str] = mapped_column(String(80))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class WorkerHeartbeat(Base):
+    __tablename__ = "worker_heartbeats"
+    name: Mapped[str] = mapped_column(String(60), primary_key=True)
+    seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class PaymentAdjustment(Base):
+    __tablename__ = "payment_adjustments"
+    resource_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    order_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("orders.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(30))
+    status: Mapped[str] = mapped_column(String(80))
+    amount_minor: Mapped[int | None] = mapped_column(BigInteger)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

@@ -45,7 +45,8 @@ def persist_paypal(event):
     # retains only correlation/accounting fields; shipping details belong on orders.
     resource = event["resource"]
     related = resource.get("supplementary_data", {}).get("related_ids", {})
-    minimal = {"id": resource["id"]}
+    resource_id = resource.get("id") or resource.get("dispute_id")
+    minimal = {"id": resource_id}
     if "amount" in resource:
         minimal["amount"] = {
             key: resource["amount"][key]
@@ -67,7 +68,7 @@ def persist_paypal(event):
             .values(
                 paypal_event_id=event["id"],
                 event_type=event["event_type"],
-                resource_id=event["resource"]["id"],
+                resource_id=resource_id,
                 verified=True,
                 raw=stored,
             )
@@ -95,8 +96,8 @@ async def paypal_event(request: Request):
         or not isinstance(event.get("event_type"), str)
         or len(event["event_type"]) > 100
         or not isinstance(event.get("resource"), dict)
-        or not isinstance(event["resource"].get("id"), str)
-        or len(event["resource"]["id"]) > 100
+        or not isinstance(event["resource"].get("id") or event["resource"].get("dispute_id"), str)
+        or len(event["resource"].get("id") or event["resource"].get("dispute_id")) > 100
     ):
         raise DomainError("INVALID_EVENT", "Missing valid event identifiers.", 400)
     if not await run_in_threadpool(paypal.verify_webhook, request.headers, event):

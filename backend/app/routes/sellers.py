@@ -45,6 +45,7 @@ def order_detail(order_id: uuid.UUID, request: Request, response: Response):
             "ship_to": order.ship_to,
             "carrier": order.carrier,
             "tracking_number": order.tracking_number,
+            "payment_review": order.reconciliation_error,
         }
 
 
@@ -124,6 +125,7 @@ def me(request: Request, response: Response):
             "store_slug": seller.store_slug,
             "csrf_token": csrf,
             "live_eligible": seller.live_eligible,
+            "is_operator": seller.is_operator,
         }
 
 

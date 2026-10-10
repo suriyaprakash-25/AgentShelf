@@ -57,7 +57,13 @@ def test_uncertain_capture_is_reconciled_not_recreated(db_clean, provider, monke
     checkout = orders.create_checkout(quote["quote_id"], session_id)
     with session_factory() as db:
         order = db.get(Order, uuid.UUID(checkout["order_id"]))
-        responses = iter([approved_data(order), capture_data(str(order.id), order.paypal_order_id)])
+        responses = iter(
+            [
+                approved_data(order),
+                approved_data(order),
+                capture_data(str(order.id), order.paypal_order_id),
+            ]
+        )
         paypal_id = order.paypal_order_id
     monkeypatch.setattr(paypal, "read_order", lambda _: next(responses))
 
@@ -97,7 +103,7 @@ def test_cancel_callback_is_idempotent(db_clean, provider, monkeypatch):
         "read_order",
         lambda _: {
             "id": paypal_id,
-            "status": "CREATED",
+            "status": "VOIDED",
             "purchase_units": [{"custom_id": checkout["order_id"]}],
         },
     )

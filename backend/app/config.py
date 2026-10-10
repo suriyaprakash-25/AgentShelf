@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", hide_input_in_errors=True)
 
     app_env: Literal["local", "test", "staging", "production"] = "local"
     database_url: str
@@ -28,6 +28,14 @@ class Settings(BaseSettings):
     whatsapp_phone_number_id: str | None = None
     resend_api_key: SecretStr | None = None
     email_from: str | None = None
+    media_backend: Literal["local", "r2"] = "local"
+    r2_endpoint: str | None = None
+    r2_bucket: str | None = None
+    r2_access_key_id: SecretStr | None = None
+    r2_secret_access_key: SecretStr | None = None
+    sentry_dsn: SecretStr | None = None
+    whatsapp_paid_template: str | None = None
+    whatsapp_template_language: str = "en_US"
 
     @model_validator(mode="after")
     def validate_environment(self):
@@ -39,6 +47,14 @@ class Settings(BaseSettings):
         ):
             raise ValueError("Live mode requires explicit enablement and LIVE_MERCHANT_ID")
         if self.app_env in {"staging", "production"}:
+            if self.public_api_url.rstrip("/") != self.frontend_url.rstrip("/"):
+                raise ValueError("Deployed API and frontend must share the same HTTPS origin")
+            if self.media_backend != "r2" or not all(
+                [self.r2_endpoint, self.r2_bucket, self.r2_access_key_id, self.r2_secret_access_key]
+            ):
+                raise ValueError("Deployed media requires a configured private R2 bucket")
+            if not self.r2_endpoint.startswith("https://"):
+                raise ValueError("R2 endpoint must use HTTPS")
             if not self.public_api_url.startswith("https://") or not self.frontend_url.startswith(
                 "https://"
             ):

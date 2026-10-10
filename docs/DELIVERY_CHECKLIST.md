@@ -1,61 +1,58 @@
-# AgentShelf delivery plan and working checklist
+# AgentShelf delivery checklist
 
-Started October 10, 2026. This expands the completion audit into implementation
-work; the supplied roadmap and its review gates remain authoritative.
-Check an implementation box only after focused tests pass. Staging acceptance and
-live release require their own evidence even after code is implemented.
+Updated October 10, 2026. Checked boxes mean tested local implementation only.
+Source roadmap acceptance and independent release gates remain separate.
 
-## 1. Foundations and provider feasibility — Sprint 0
+## Implemented and checked locally
 
-- [x] Preserve source guide, implementation plan and full 113-checkbox audit.
-- [x] Database/MCP/quote foundation with recorded local tests.
-- [ ] Configure PayPal sandbox accounts and record every ADR-001 experiment.
-- [ ] Configure Anthropic, run five-photo spike and select measured model.
-- [ ] Configure Meta test recipients and verify actual staging echo.
-- [ ] Establish funded HTTPS staging, real CI and required AG Studio licence.
+- [x] Preserve original roadmap and historical 113-checkbox completion audit.
+- [x] PostgreSQL schema, migrations, catalog, locked stock and budget invariants.
+- [x] Secure email verification, consent, seller sessions, CSRF and ownership.
+- [x] WhatsApp onboarding with email verification before binding phone ownership.
+- [x] Private image processing/storage adapter, asynchronous AI drafts and review history.
+- [x] Web/WhatsApp publication requires seller-entered price/stock and confirmation.
+- [x] WhatsApp multi-photo grouping, edits/archive, orders and tracking commands.
+- [x] Public photos and catalog keyset pagination; seller product/order pagination.
+- [x] Real MCP buyer agent transport, streamed tool results and explicit quote confirmation.
+- [x] Server-bound session/country, shared quotas, bounded history/tool/model calls.
+- [x] Stable checkout/capture/tracking IDs and durable approved capture intent.
+- [x] Signed/deduplicated inbox, bounded job retries and known-order reconciliation.
+- [x] Paid-notification adapter gated by verified capture event; utility-template support.
+- [x] Verified refund accounting and visible dispute/reversal review states.
+- [x] Role-protected operations UI, audited failure retry and worker heartbeats.
+- [x] Privacy-filtered Sentry adapter and request logging; expired auth/chat cleanup.
+- [x] Actual local backup/restore drill and guarded synthetic sandbox reset.
+- [x] Local 1,000-product search/pagination check and completed browser runner.
+- [x] Actual AG Studio custom widget/theme and framework analyst, locally browser tested.
+- [x] Same-origin deployment container built; non-root runtime/migrations/catalog/UI checked with PostgreSQL 17.
+- [x] API/worker/private-storage blueprint authored.
 
-## 2. Walking skeleton — Gate 1
+## Required before full Must and pilot acceptance
 
-- [x] Secure email magic links and server-side seller sessions (local/provider-mock evidence).
-- [x] Web onboarding with consent and isolated merchant eligibility (local browser fixture).
-- [ ] WhatsApp onboarding to public store/MCP URLs.
-- [ ] Real MCP buyer agent, budget-bound session and human quote confirmation.
-- [ ] Real sandbox approval/capture, signed webhook and complete audit trail.
-- [ ] Gate 1 review evidence, tag and reviewer signoff.
+- [ ] Real PayPal sandbox ADR-001 with three sellers and US/UK buyers.
+- [ ] Actual approval/capture, signed webhooks, duplicate/retry and tracking evidence.
+- [ ] Decide safe provider-expiry policy: current release is VOIDED-only, not unconditional 15 minutes.
+- [ ] Real Meta onboarding/photos/edits/tracking, approved template and paid alert timing.
+- [ ] Real email domain/delivery and private R2 API/worker acceptance.
+- [ ] Anthropic spike/model choice, 20-product quality, image-instruction/PII tests and draft latency.
+- [ ] Fifteen buyer tasks, money-path browser flow and independent MCP Inspector/client tests.
+- [ ] AG Studio deployment licence covering judging and real model acceptance.
+- [ ] Remote CI including PostgreSQL 17 and secret-history scan; hosted startup/provider checks.
+- [ ] Funded HTTPS staging; verify origin/cookies/CSP/proxy quotas and external purchase under five minutes.
+- [ ] Managed backups/restore/retention, orphan media and historical personal-data audit.
+- [ ] Human dispute/reversal resolution drill and unknown-create-ID correlation.
+- [ ] Real Sentry/alert delivery, worker outage/retry drills and nightly provider checks.
+- [ ] Lighthouse LCP/accessibility, deployed search/load targets and all mobile layouts.
+- [ ] All 12 Must criteria and 14 stories pass on staging; Gate 1 and Gate 2 signoff.
 
-## 3. Complete all Must workflows
+## Release and live pilot
 
-- [x] Seller-owned draft/create/price/stock/archive, confirmation and paginated lists (local evidence).
-- [ ] AG Studio product/order dashboard, filters/sorting and CSV export.
-- [ ] Durable processed media, listing drafts, price confirmation and YES publication.
-- [ ] WhatsApp image/listing/edit commands and paid notifications.
-- [ ] Tracking command/API pushed to PayPal with ownership checks.
-  Local dashboard/API implementation is tested with controlled provider responses;
-  WhatsApp command and real sandbox tracker acceptance remain open.
-- [ ] Streaming Playground with MCP tool results and server-controlled checkout approval.
-- [ ] Safe reservation expiry and uncertain-payment reconciliation.
-- [ ] Full partial-refund/reversal/dispute handling with visible operational states.
+- [ ] Should features after Gate 2 only, in source order.
+- [ ] Final judge credentials/public links, walkthrough video, evaluation and runbook drills.
+- [ ] Team review, Devpost draft, Gate 3 signoff and independent link verification.
+- [ ] Merchant-specific live eligibility/permissions/policies and separate live app/database/storage.
+- [ ] Merchant-approved controlled live transaction and funded operations through judging.
+- [ ] User/team completes submission.
 
-## 4. Production checks — Gate 2
-
-- [ ] Shared prescribed quotas, CSRF, all seller ownership and prompt/log privacy tests.
-- [ ] Minimize stored webhook PII and prove buyer-address storage policy.
-- [ ] Admin failures/retry UI, order correlation, Sentry and external alerting.
-- [ ] Real backup/restore, safe sandbox demo-reset and clean-machine startup.
-- [ ] Complete red-team suite, 20 real products, 15 buyer tasks and latency evidence.
-- [ ] 1,000-product search benchmark, Lighthouse performance/accessibility and all layouts.
-- [ ] Full money-path browser coverage and resolve Windows Chrome teardown.
-- [ ] All M1–M12 and 14 stories pass on staging; Gate 2 review/signoff.
-
-## 5. Release, submission and live pilot — Gate 3
-
-- [ ] Should items only after Gate 2, in guide order.
-- [ ] Final README, judge credentials, verified public links and runbook drills.
-- [ ] Real demo video, team evaluations, Devpost draft and Gate 3 review/signoff.
-- [ ] Separately verified live merchant account, permissions, policies and isolation.
-- [ ] Funded operations through judging; merchant-approved controlled live transaction.
-- [ ] User/team performs submission and independent link verification.
-
-External credentials belong in ignored local env files or managed deployment secrets.
-No secrets are requested in chat. Missing credentials do not prevent code work;
-they do prevent claiming provider acceptance or live readiness.
+Secrets belong in ignored env files or managed secrets, never chat or commits.
+Provider credentials alone do not replace setup and acceptance evidence.

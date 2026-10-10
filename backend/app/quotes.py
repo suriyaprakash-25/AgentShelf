@@ -34,6 +34,7 @@ def search_products(
     ship_to_country=None,
     limit=5,
     store_slug=None,
+    after=None,
 ):
     """Search indexed live products and exclude unsafe catalog entries."""
     if (
@@ -63,6 +64,8 @@ def search_products(
         statement = statement.where(Product.price_minor <= max_price_minor)
     if store_slug:
         statement = statement.where(Seller.store_slug == store_slug)
+    if after:
+        statement = statement.where(Product.id > parse_id(str(after)))
     if ship_to_country:
         statement = statement.where(Seller.shipping_rates.has_key(ship_to_country))  # noqa: W601
     results = []

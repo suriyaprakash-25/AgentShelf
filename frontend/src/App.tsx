@@ -1,4 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react";
+import { AiBuyer } from "./AiBuyer";
+import { Operations } from "./Operations";
 import {
   Link,
   NavLink,
@@ -76,6 +78,7 @@ export default function App() {
               element={<Playground capabilities={cap} />}
             />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/operations" element={<Operations />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/receipt" element={<Receipt />} />
             <Route
@@ -218,14 +221,26 @@ function Home() {
   );
 }
 
-function ProductArt({ index, title }: { index: number; title: string }) {
+function ProductArt({
+  index,
+  title,
+  demo = true,
+}: {
+  index: number;
+  title: string;
+  demo?: boolean;
+}) {
   return (
     <div
       className={`product-art art-${index % 4}`}
       role="img"
-      aria-label={`Illustrative pattern for ${title}; not a product photograph`}
+      aria-label={
+        demo
+          ? `Illustrative pattern for ${title}; not a product photograph`
+          : `No product photograph supplied for ${title}`
+      }
     >
-      <span>ILLUSTRATED DEMO</span>
+      <span>{demo ? "ILLUSTRATED DEMO" : "PHOTO NOT PROVIDED"}</span>
       <div className="art-shape" />
     </div>
   );
@@ -235,6 +250,21 @@ function StorePage() {
   const slug = location.pathname.split("/").pop() || "meera-jaipur";
   const [store, setStore] = useState<Store | null>(null);
   const [error, setError] = useState("");
+  const [loadingMore, setLoadingMore] = useState(false);
+  async function more() {
+    if (!store?.next_cursor) return;
+    setLoadingMore(true);
+    try {
+      const next = await api<Store>(
+        `/api/stores/${encodeURIComponent(slug)}?after=${store.next_cursor}`,
+      );
+      setStore({ ...next, products: [...store.products, ...next.products] });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
   useEffect(() => {
     const controller = new AbortController();
     api<Store>(
@@ -271,17 +301,32 @@ function StorePage() {
       {!store && !error && <p role="status">Loading the collection…</p>}
       {store && (
         <>
-          <p className="notice">
-            Demo products and illustrations are synthetic. The seller PayPal
-            account must be configured before purchase.
-          </p>
+          {slug === "meera-jaipur" && (
+            <p className="notice">
+              Demo products and illustrations are synthetic. The seller PayPal
+              account must be configured before purchase.
+            </p>
+          )}
           <div className="product-grid">
             {store.products.map((p, i) => (
               <article className="product-card" key={p.product_id}>
-                <ProductArt index={i} title={p.title} />
+                {p.image_url ? (
+                  <img
+                    className="product-photo"
+                    src={p.image_url}
+                    alt={p.title}
+                    loading="lazy"
+                  />
+                ) : (
+                  <ProductArt
+                    index={i}
+                    title={p.title}
+                    demo={slug === "meera-jaipur"}
+                  />
+                )}
                 <div className="product-info">
                   <span className="eyebrow">
-                    JAIPUR STUDIO / {String(i + 1).padStart(2, "0")}
+                    {store.country} / {String(i + 1).padStart(2, "0")}
                   </span>
                   <h3>{p.title}</h3>
                   <p>{p.description}</p>
@@ -300,6 +345,15 @@ function StorePage() {
               </article>
             ))}
           </div>
+          {store.next_cursor && (
+            <button
+              className="button secondary"
+              disabled={loadingMore}
+              onClick={() => void more()}
+            >
+              {loadingMore ? "Loading…" : "More products"}
+            </button>
+          )}
           {store.products.length === 0 && (
             <p className="notice">
               This shop has no available products right now. Please check back.
@@ -428,7 +482,7 @@ function Playground({ capabilities }: { capabilities: Capabilities | null }) {
           </div>
           <div className="notice">
             {capabilities?.ai_configured
-              ? "AI chat is being integrated. This catalog explorer calls the REST API directly."
+              ? "Chat with your agent, or browse the catalog directly below."
               : "AI chat needs an Anthropic API key. You can explore real catalog data and request server quotes here."}
           </div>
           <div className="form-row">
@@ -457,6 +511,12 @@ function Playground({ capabilities }: { capabilities: Capabilities | null }) {
               </select>
             </label>
           </div>
+          <AiBuyer
+            key={`${budget}:${country}`}
+            budget={budget}
+            country={country}
+            capabilities={capabilities}
+          />
           <label className="search-label">
             <Search size={18} />
             <input
@@ -568,6 +628,8 @@ function Receipt() {
     status: string;
     amount: string;
     currency: string;
+    refunded_amount: string;
+    payment_review: string | null;
   } | null>(null);
   const [error, setError] = useState("");
   useEffect(() => {
@@ -578,7 +640,13 @@ function Receipt() {
       return;
     }
     const controller = new AbortController();
-    api<{ status: string; amount: string; currency: string }>(
+    api<{
+      status: string;
+      amount: string;
+      currency: string;
+      refunded_amount: string;
+      payment_review: string | null;
+    }>(
       `/api/orders/${encodeURIComponent(id)}?session_id=${encodeURIComponent(session)}`,
       undefined,
       controller.signal,
@@ -608,6 +676,17 @@ function Receipt() {
           <p>
             Amount: {result.amount} {result.currency}
           </p>
+          {Number(result.refunded_amount) > 0 && (
+            <p>
+              Confirmed refunds: {result.refunded_amount} {result.currency}
+            </p>
+          )}
+          {result.payment_review && (
+            <p role="status">
+              This payment needs review. Contact the seller before arranging
+              fulfilment.
+            </p>
+          )}
         </div>
       ) : (
         !error && <p role="status">Checking your order…</p>

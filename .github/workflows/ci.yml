@@ -34,6 +34,12 @@ jobs:
       - run: uv run alembic upgrade head
       - run: uv run alembic downgrade base
       - run: uv run alembic upgrade head
+      - name: Install matching backup clients
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+          echo "PG_DUMP=/usr/lib/postgresql/17/bin/pg_dump" >> "$GITHUB_ENV"
+          echo "PG_RESTORE=/usr/lib/postgresql/17/bin/pg_restore" >> "$GITHUB_ENV"
       - run: uv run pytest -q
       - run: uv run pip-audit
   frontend:
@@ -115,3 +121,8 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --tag agentshelf:ci .

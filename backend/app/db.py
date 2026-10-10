@@ -14,6 +14,7 @@ def get_engine():
     return create_engine(
         get_settings().database_url,
         pool_pre_ping=True,
+        hide_parameters=True,
         pool_size=5,
         max_overflow=5,
         connect_args={"connect_timeout": 5},

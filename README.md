@@ -8,7 +8,7 @@ agent can read. AgentShelf turns seller-approved listings into an agent-readable
 store and connects purchases to PayPal. Our first demo follows Meera, a fictional
 Jaipur textile seller, selling to overseas buyers.
 
-**Status: foundation under development. No public deployment or verified payment yet.**
+**Status: listing, buyer-agent, WhatsApp and operations workflows implemented and locally tested. Production/pilot acceptance is still open; no public deployment or real provider payment is verified.**
 The source guide is preserved in [docs/BUILD_GUIDE.pdf](docs/BUILD_GUIDE.pdf).
 Read [the implementation plan](docs/IMPLEMENTATION_PLAN.md) and [actual status](docs/STATUS.md)
 before judging readiness. Sandbox is the judge environment; live rollout is a separate gate.
