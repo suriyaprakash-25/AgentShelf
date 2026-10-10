@@ -12,6 +12,7 @@ Jaipur textile seller, selling to overseas buyers.
 The source guide is preserved in [docs/BUILD_GUIDE.pdf](docs/BUILD_GUIDE.pdf).
 Read [the implementation plan](docs/IMPLEMENTATION_PLAN.md) and [actual status](docs/STATUS.md)
 before judging readiness. Sandbox is the judge environment; live rollout is a separate gate.
+See [the owner handoff](docs/OWNER_HANDOFF.md) for verified October 10 results and the remaining account, policy, deployment and acceptance tasks.
 
 ## Try the local build
 

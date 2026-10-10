@@ -69,7 +69,7 @@ text after 30 days while preserving payment/budget records. Bounded, operator-au
 API serves the built frontend from one HTTPS origin; worker uses the same database,
 private R2 bucket and provider/email secrets. Docker now builds successfully. The non-root packaged API starts against an isolated
 PostgreSQL 17 container and serves the catalog/UI with security headers; migrations
-report no drift. The full native suite uses PostgreSQL 18.4. Remote CI remains unverified.
+report no drift. The full native suite uses PostgreSQL 18.4. The code revision e38a0f9 passes remote backend, frontend, container and secrets checks; browser tests pass with final job cleanup still running. See OWNER_HANDOFF.md for the exact CI run.
 The seller bundle is approximately 1 MB and optional Studio approximately 4.36 MB before compression; The October 10 local mobile storefront audit scores performance 91, accessibility 100 and LCP 2.0 seconds after local fonts, compression and heading fixes. Hosted targets and all authenticated screens remain unverified.
 AG Studio 3.0.0 is integrated with a custom shop widget, theme and Studio Agent Framework analyst.
 The actual component/analyst browser flow passes using controlled aggregate/AI responses.
@@ -83,7 +83,7 @@ require provider setup, permissions, webhooks, templates, domains and acceptance
 Worldwide access is a product goal; receiving eligibility remains merchant-specific.
 USD and US/UK shipping are the initial supported commerce policy.
 
-Latest credential-free phase: 175 backend tests and 5 browser tests pass; native PostgreSQL backup/restore passes and the migrated application database reports no drift. The current container rebuild is blocked by Docker Desktop HTTP 500 after D: filled. See OWNER_HANDOFF.md for evidence and the remaining acceptance checklist. Should features
+Latest credential-free phase: 175 backend tests and 5 browser tests pass; native PostgreSQL backup/restore passes and the migrated application database reports no drift. Local Docker Desktop is blocked by HTTP 500 after D: filled; GitHub CI successfully builds and checks the new packaged API/worker with PostgreSQL 17. See OWNER_HANDOFF.md for evidence and the remaining acceptance checklist. Should features
 remain deferred until Gate 2, as required by the source roadmap.
 
 ## AG Studio analytics boundary

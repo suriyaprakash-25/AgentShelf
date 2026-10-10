@@ -34,14 +34,18 @@ real provider tests, deployed measurements and merchant decisions are still requ
   reports no new migration operations. Test fixtures are not used as migration proof.
 - Local mobile storefront Lighthouse: **performance 91, accessibility 100, LCP 2.0 s**;
   before fixes: 69, 98, 4.2 s. One local route/run, not a hosted or all-screen result.
-- A previous full-history Gitleaks scan covered eight commits with no leaks. A fresh
-  final-revision scan and repository delivery evidence are recorded separately below.
+- Full-history Gitleaks scanning on the completed code revision found no leaks;
+  the tested code is pushed to feat/foundations at e38a0f9. Remote backend, frontend,
+  container and secrets jobs passed. Browser tests passed; job cleanup was still
+  running when this evidence note was written. CI evidence: https://github.com/suriyaprakash-25/AgentShelf/actions/runs/38036981226.
 
 ## Verification limits and workstation follow-up
 
-The new Docker rebuild could not finish: Docker Desktop returns HTTP 500 and D: filled.
-The earlier non-root PostgreSQL 17 container/migration/API proof applies to the preceding
-revision, not this revision. CI smoke additions need a healthy Docker engine or remote CI.
+The local Docker rebuild could not finish: Docker Desktop returns HTTP 500 and D: filled.
+GitHub CI successfully built this revision and verified the packaged API/worker against
+PostgreSQL 17, migrations/no drift, seeded catalog/UI, security headers, authentication
+and oversized JSON rejection. Local Docker Desktop still needs repair. This remote
+container evidence does not establish funded hosted deployment or provider acceptance.
 Generated frontend files were preserved on E: and a local dependency junction was created;
 source and database were not moved. Free sufficient disk space and restart Docker Desktop.
 No unrelated files or real production records were deleted. Owner disk cleanup is required.

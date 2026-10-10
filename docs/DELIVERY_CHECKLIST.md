@@ -41,7 +41,8 @@ Source roadmap acceptance and independent release gates remain separate.
 - [ ] Anthropic spike/model choice, 20-product quality, image-instruction/PII tests and draft latency.
 - [ ] Fifteen buyer tasks, money-path browser flow and independent MCP Inspector/client tests.
 - [ ] AG Studio deployment licence covering judging and real model acceptance.
-- [ ] Remote CI including PostgreSQL 17 and secret-history scan; hosted startup/provider checks.
+- [x] Remote PostgreSQL 17 backend/container checks and complete-history secret scan on e38a0f9.
+- [ ] Funded hosted startup and real provider checks.
 - [ ] Funded HTTPS staging; verify origin/cookies/CSP/proxy quotas and external purchase under five minutes.
 - [ ] Managed backups/restore/retention and owner-approved execution of media/personal-data maintenance.
 - [ ] Real human dispute/reversal and verified unknown-create-ID correlation drills.

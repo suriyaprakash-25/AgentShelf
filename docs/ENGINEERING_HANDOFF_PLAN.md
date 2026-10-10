@@ -16,5 +16,6 @@ Real PayPal receiving/expiry experiments, approved Meta templates, real model ev
 funded deployment, AG Studio licensing, merchant policies and independent gate approval
 require account access or owner/reviewer decisions. They remain unaccepted until evidence exists.
 
-Container revalidation and remote CI remain open: Docker Desktop returns HTTP 500.
+Local Docker Desktop returns HTTP 500; remote CI builds and verifies the hardened container.
+Backend, frontend and secrets jobs pass; browser tests pass with CI job cleanup pending.
 Local browser dependencies are preserved on E: through a project-local junction after D: filled.

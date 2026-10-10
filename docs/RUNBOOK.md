@@ -277,5 +277,6 @@ if required. Source, lockfiles, database and roadmap stayed in their original lo
 No unrelated files or Docker volumes were deleted. Automatic review rejected cache
 deletion; the fallback preserved the named caches instead. Free adequate D: space
 and restore Docker Desktop health before repeating compose.verify.yaml verification.
-The latest Docker engine responds HTTP 500, so earlier container proof must not be
-presented as validation of this new hardening revision.
+The local Docker engine responds HTTP 500. GitHub CI on e38a0f9 builds and verifies
+the new hardening revision against PostgreSQL 17; use that exact run as evidence,
+not the earlier local image. No actual provider or funded host is verified by it.
