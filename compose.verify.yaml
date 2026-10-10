@@ -1,0 +1,35 @@
+# Isolated synthetic sandbox verification only; never use for production.
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: agentshelf
+      POSTGRES_PASSWORD: isolated-test-only
+      POSTGRES_DB: agentshelf_test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentshelf -d agentshelf_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+  api:
+    image: ${AGENTSHELF_VERIFY_IMAGE:-agentshelf:pilot-local}
+    environment:
+      APP_ENV: test
+      DATABASE_URL: postgresql+psycopg://agentshelf:isolated-test-only@db:5432/agentshelf_test
+      PUBLIC_API_URL: http://localhost:18000
+      FRONTEND_URL: http://localhost:18000
+    ports: ["127.0.0.1:18000:8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+  worker:
+    image: ${AGENTSHELF_VERIFY_IMAGE:-agentshelf:pilot-local}
+    command: python worker.py
+    environment:
+      APP_ENV: test
+      DATABASE_URL: postgresql+psycopg://agentshelf:isolated-test-only@db:5432/agentshelf_test
+      PUBLIC_API_URL: http://localhost:18000
+      FRONTEND_URL: http://localhost:18000
+    depends_on:
+      db:
+        condition: service_healthy

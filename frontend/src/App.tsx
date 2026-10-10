@@ -1,6 +1,4 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import { AiBuyer } from "./AiBuyer";
-import { Operations } from "./Operations";
 import {
   Link,
   NavLink,
@@ -26,6 +24,13 @@ import {
   type Store,
 } from "./api";
 import "./styles.css";
+
+const AiBuyer = lazy(() =>
+  import("./AiBuyer").then((m) => ({ default: m.AiBuyer })),
+);
+const Operations = lazy(() =>
+  import("./Operations").then((m) => ({ default: m.Operations })),
+);
 
 const Dashboard = lazy(() =>
   import("./Seller").then((m) => ({ default: m.SellerDashboard })),
@@ -328,7 +333,7 @@ function StorePage() {
                   <span className="eyebrow">
                     {store.country} / {String(i + 1).padStart(2, "0")}
                   </span>
-                  <h3>{p.title}</h3>
+                  <h2>{p.title}</h2>
                   <p>{p.description}</p>
                   <div className="product-bottom">
                     <strong>

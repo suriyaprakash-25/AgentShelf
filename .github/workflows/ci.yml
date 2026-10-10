@@ -126,3 +126,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker build --tag agentshelf:ci .
+      - name: Verify packaged API and worker
+        env:
+          AGENTSHELF_VERIFY_IMAGE: agentshelf:ci
+        run: |
+          docker compose -p agentshelf-ci-smoke -f compose.verify.yaml up -d --wait db
+          docker compose -p agentshelf-ci-smoke -f compose.verify.yaml run --rm api alembic upgrade head
+          docker compose -p agentshelf-ci-smoke -f compose.verify.yaml run --rm api alembic check
+          docker compose -p agentshelf-ci-smoke -f compose.verify.yaml run --rm api python seed.py
+          docker compose -p agentshelf-ci-smoke -f compose.verify.yaml up -d api worker
+          python scripts/verify-container.py
+          docker compose -p agentshelf-ci-smoke -f compose.verify.yaml exec -T worker python -c "from app.db import session_factory; from app.models import WorkerHeartbeat, utcnow; from sqlalchemy import select; db=session_factory(); row=db.scalar(select(WorkerHeartbeat)); assert row and (utcnow()-row.seen_at).total_seconds()<30; db.close()"
+      - name: Remove isolated verification resources
+        if: always()
+        run: docker compose -p agentshelf-ci-smoke -f compose.verify.yaml down --volumes
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: container-smoke
+          path: work/container-smoke.json
+          retention-days: 7

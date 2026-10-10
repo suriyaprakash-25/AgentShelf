@@ -56,3 +56,28 @@ def test_deployed_storage_cannot_silently_use_ephemeral_local_files():
             public_api_url="https://app.example.invalid",
             frontend_url="https://app.example.invalid",
         )
+
+
+def test_paypal_approval_url_cannot_leave_expected_environment(monkeypatch):
+    from app import paypal
+
+    monkeypatch.setattr(get_settings(), "paypal_mode", "sandbox")
+    for href in [
+        "https://evil.invalid/checkout",
+        "https://www.paypal.com/checkout",
+        "https://www.sandbox.paypal.com@evil.invalid/checkout",
+        "http://www.sandbox.paypal.com/checkout",
+        "https://www.sandbox.paypal.com:444/checkout",
+    ]:
+        with pytest.raises(DomainError, match="verified"):
+            paypal.approval_link({"links": [{"rel": "approve", "href": href}]})
+    assert paypal.approval_link(
+        {
+            "links": [
+                {
+                    "rel": "approve",
+                    "href": "https://www.sandbox.paypal.com/checkoutnow?token=fixture",
+                }
+            ]
+        }
+    ).startswith("https://www.sandbox.paypal.com/")

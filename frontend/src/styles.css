@@ -1,6 +1,7 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap");
+@import "@fontsource-variable/dm-sans/index.css";
+@import "@fontsource-variable/manrope/index.css";
 :root {
-  font-family: "DM Sans", sans-serif;
+  font-family: "DM Sans Variable", sans-serif;
   color: #172e28;
   background: #f9f8f3;
   font-synthesis: none;
@@ -497,7 +498,7 @@ footer > span {
 .product-info .eyebrow {
   font-size: 8px;
 }
-.product-info h3 {
+.product-info h2 {
   font-size: 18px;
   margin: 13px 0;
 }

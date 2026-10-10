@@ -4,6 +4,7 @@ import re
 import threading
 import time
 from decimal import Decimal, InvalidOperation
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -153,14 +154,36 @@ def create_order(order, quote, seller):
         },
     }
     data = request("POST", "/v2/checkout/orders", body, "create-" + str(order.id))
+    return data["id"], approval_link(data)
+
+
+def approval_link(data):
     links = [
-        link["href"]
+        link.get("href")
         for link in data.get("links", [])
         if link.get("rel") in {"payer-action", "approve"}
     ]
-    if not links or not links[0].startswith("https://"):
+    expected = (
+        {"www.sandbox.paypal.com", "sandbox.paypal.com"}
+        if get_settings().paypal_mode == "sandbox"
+        else {"www.paypal.com", "paypal.com"}
+    )
+    if not links or not isinstance(links[0], str) or len(links[0]) > 4096:
         raise DomainError("PAYPAL_LINK_MISSING", "PayPal did not return an approval link.", 502)
-    return data["id"], links[0]
+    try:
+        url = urlsplit(links[0])
+        valid = (
+            url.scheme == "https"
+            and url.hostname in expected
+            and not url.username
+            and not url.password
+            and url.port in {None, 443}
+        )
+    except ValueError:
+        valid = False
+    if not valid:
+        raise DomainError("PAYPAL_LINK_INVALID", "Approval link could not be verified.", 502)
+    return links[0]
 
 
 def read_order(paypal_order_id: str):

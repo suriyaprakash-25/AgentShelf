@@ -55,6 +55,29 @@ export function Operations() {
       setBusy(false);
     }
   }
+  async function correlate(orderId: string, providerId: string) {
+    if (
+      !window.confirm(
+        "Verify and attach this PayPal order reference? This does not approve or capture payment.",
+      )
+    )
+      return;
+    setBusy(true);
+    setError("");
+    try {
+      await api(
+        `/api/ops/orders/${orderId}/correlate`,
+        { paypal_order_id: providerId.trim(), confirmed: true },
+        undefined,
+        { csrf },
+      );
+      setData(await api<Overview>("/api/ops"));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <div className="page">
       <span className="eyebrow">OPERATIONS</span>
@@ -124,6 +147,38 @@ export function Operations() {
                 PayPal reference:{" "}
                 {order.paypal_order_id || "Create response uncertain"}
               </p>
+              {!order.paypal_order_id &&
+                order.status === "checkout_created" && (
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      const form = new FormData(event.currentTarget);
+                      void correlate(
+                        order.id,
+                        String(form.get("provider_id") || ""),
+                      );
+                    }}
+                  >
+                    <label>
+                      PayPal order reference found during provider review
+                      <input
+                        name="provider_id"
+                        required
+                        maxLength={64}
+                        pattern="[A-Za-z0-9-]+"
+                        autoComplete="off"
+                      />
+                    </label>
+                    <button className="button secondary" disabled={busy}>
+                      Verify reference
+                    </button>
+                    <p>
+                      The server checks the order reference, amount and
+                      recipient. Stock remains reserved until payment status is
+                      verified.
+                    </p>
+                  </form>
+                )}
             </section>
           ))}
         </>

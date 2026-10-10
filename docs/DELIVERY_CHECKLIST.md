@@ -27,6 +27,10 @@ Source roadmap acceptance and independent release gates remain separate.
 - [x] Same-origin deployment container built; non-root runtime/migrations/catalog/UI checked with PostgreSQL 17.
 - [x] API/worker/private-storage blueprint authored.
 
+- [x] Bounded JSON/MCP bodies, verified lost-order correlation and auditable dry-run retention tools.
+- [x] October 10 full local suite: 175 backend tests, 5 browser tests, native restore and no migration drift.
+- [x] Local mobile storefront: performance 91, accessibility 100, LCP 2.0 seconds.
+
 ## Required before full Must and pilot acceptance
 
 - [ ] Real PayPal sandbox ADR-001 with three sellers and US/UK buyers.
@@ -39,8 +43,8 @@ Source roadmap acceptance and independent release gates remain separate.
 - [ ] AG Studio deployment licence covering judging and real model acceptance.
 - [ ] Remote CI including PostgreSQL 17 and secret-history scan; hosted startup/provider checks.
 - [ ] Funded HTTPS staging; verify origin/cookies/CSP/proxy quotas and external purchase under five minutes.
-- [ ] Managed backups/restore/retention, orphan media and historical personal-data audit.
-- [ ] Human dispute/reversal resolution drill and unknown-create-ID correlation.
+- [ ] Managed backups/restore/retention and owner-approved execution of media/personal-data maintenance.
+- [ ] Real human dispute/reversal and verified unknown-create-ID correlation drills.
 - [ ] Real Sentry/alert delivery, worker outage/retry drills and nightly provider checks.
 - [ ] Lighthouse LCP/accessibility, deployed search/load targets and all mobile layouts.
 - [ ] All 12 Must criteria and 14 stories pass on staging; Gate 1 and Gate 2 signoff.

@@ -244,3 +244,38 @@ on staging before enabling it for the pilot.
 
 SDK reference: https://www.ag-grid.com/studio/react/installation/ and
 https://www.ag-grid.com/studio/react/ai-direct-llm-runner/ .
+
+
+## Bounded retention review and lost-create recovery
+
+Run `uv run python maintenance.py media-cleanup --days 7 --limit 100` or
+`uv run python maintenance.py privacy-review --days 30 --limit 100` first.
+Both default to dry-run and return counts without personal data. R2 inventory and
+legacy inboxes return a continuation cursor; pass it with `--cursor`. Local media
+inventory scans only its first bounded page and has no pagination; do not infer a
+whole-storage audit from that result. Every draft/product reference is retained.
+
+Apply only after the owner approves the retention policy and the dry-run findings:
+add `--apply --operator-email <verified-operator-email> --confirm APPLY_REVIEWED_RETENTION`.
+An active operator is checked again in the mutation transaction. No production
+retention action has been executed during local verification. Keep managed backup
+retention and recovery requirements aligned with the approved policy.
+
+For an unknown create response, inspect the seller PayPal account and independently
+identify the candidate PayPal order. The operator dashboard correlation form performs
+only a provider GET and verifies the one purchase unit, local custom ID, seller payee,
+currency and exact quoted amount. It records an audit and queues reconciliation;
+it cannot approve a buyer or initiate a new capture. Review mismatches in PayPal.
+Uncertain reservations remain held; VOIDED proof is still required for safe release.
+
+## October 10 workstation verification incident
+
+D: filled during verification. Generated dependencies/caches were preserved on E:;
+frontend/node_modules currently points to E:/AgentShelf-local-frontend-20261010/node_modules.
+For local Node commands use NODE_OPTIONS=--preserve-symlinks --preserve-symlinks-main
+if required. Source, lockfiles, database and roadmap stayed in their original locations.
+No unrelated files or Docker volumes were deleted. Automatic review rejected cache
+deletion; the fallback preserved the named caches instead. Free adequate D: space
+and restore Docker Desktop health before repeating compose.verify.yaml verification.
+The latest Docker engine responds HTTP 500, so earlier container proof must not be
+presented as validation of this new hardening revision.

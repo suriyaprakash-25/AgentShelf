@@ -17,8 +17,10 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select, text
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.concurrency import run_in_threadpool
+from starlette.middleware.gzip import GZipMiddleware
 
 from app import observability, orders, quotes, rate_limits
+from app.body_limits import BodySizeLimitMiddleware
 from app.config import get_settings
 from app.db import get_engine, session_factory
 from app.errors import DomainError
@@ -66,12 +68,19 @@ async def request_context(request, call_next):
             {"error": {"code": "SERVICE_UNAVAILABLE", "message": "Please try again later."}},
             status_code=500,
         )
+    if request.url.path.startswith("/assets/") and response.status_code == 200:
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    elif any(
+        request.url.path == prefix or request.url.path.startswith(prefix + "/")
+        for prefix in ("/api/me", "/api/ops", "/api/auth")
+    ):
+        response.headers["Cache-Control"] = "no-store"
     response.headers["X-Request-ID"] = request_id
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' "
-        "https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; "
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+        "font-src 'self'; "
         "img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; "
         "base-uri 'self'; form-action 'self'"
     )
@@ -285,6 +294,8 @@ def create_app():
         ],
         expose_headers=["X-Request-ID", "Mcp-Session-Id"],
     )
+    application.add_middleware(GZipMiddleware, minimum_size=512, compresslevel=6)
+    application.add_middleware(BodySizeLimitMiddleware)
     application.middleware("http")(request_context)
     application.add_exception_handler(DomainError, domain_error)
     application.add_exception_handler(RequestValidationError, invalid_request)

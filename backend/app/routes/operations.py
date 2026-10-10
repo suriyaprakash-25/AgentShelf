@@ -3,9 +3,10 @@
 import uuid
 
 from fastapi import APIRouter, Request, Response
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 
-from app import auth
+from app import auth, operator_recovery
 from app.db import session_factory
 from app.errors import DomainError
 from app.models import Job, OpsAudit, Order, PaymentAdjustment, Seller, WorkerHeartbeat, utcnow
@@ -89,3 +90,17 @@ def retry(job_id: uuid.UUID, request: Request):
         job.status, job.attempts, job.last_error, job.run_after = "queued", 0, None, utcnow()
         db.add(OpsAudit(actor_id=actor, action="retry_job", resource_id=str(job.id)))
     return {"status": "queued"}
+
+
+class CorrelationInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    paypal_order_id: str = Field(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9-]+$")
+    confirmed: bool
+
+
+@router.post("/api/ops/orders/{order_id}/correlate")
+def correlate(order_id: uuid.UUID, body: CorrelationInput, request: Request):
+    actor = access(request, write=True)
+    if body.confirmed is not True:
+        raise DomainError("CONFIRMATION_REQUIRED", "Confirm the provider-reference recovery.", 409)
+    return operator_recovery.correlate(actor, order_id, body.paypal_order_id)

@@ -1,6 +1,7 @@
 """Explicit local operator management and guarded backup/restore commands."""
 
 import argparse
+import json
 import os
 import subprocess
 from datetime import timedelta
@@ -175,6 +176,14 @@ def main():
     reset = actions.add_parser("demo-reset")
     reset.add_argument("--confirm", required=True)
     actions.add_parser("cleanup-expired")
+    for name in ("media-cleanup", "privacy-review"):
+        review = actions.add_parser(name)
+        review.add_argument("--apply", action="store_true")
+        review.add_argument("--operator-email")
+        review.add_argument("--confirm")
+        review.add_argument("--days", type=int, default=7 if name == "media-cleanup" else 30)
+        review.add_argument("--limit", type=int, default=100)
+        review.add_argument("--cursor")
     args = parser.parse_args()
     if args.action == "operator":
         grant_operator(args.email, args.revoke)
@@ -184,6 +193,31 @@ def main():
         restore(args.pg_restore, args.path, os.environ[args.target_env])
     elif args.action == "demo-reset":
         demo_reset(args.confirm)
+    elif args.action in {"media-cleanup", "privacy-review"}:
+        actor_id = None
+        if args.apply:
+            if args.confirm != "APPLY_REVIEWED_RETENTION" or not args.operator_email:
+                raise ValueError("Apply requires a verified operator and APPLY_REVIEWED_RETENTION.")
+            with session_factory() as db:
+                actor = db.scalar(
+                    select(Seller).where(
+                        Seller.email == args.operator_email.lower(),
+                        Seller.is_operator.is_(True),
+                        Seller.status == "active",
+                    )
+                )
+                if not actor:
+                    raise ValueError("Verified active operator required.")
+                actor_id = actor.id
+        if args.action == "media-cleanup":
+            from app.media_maintenance import cleanup
+
+            result = cleanup(actor_id, args.apply, args.days, args.limit, args.cursor)
+        else:
+            from app.privacy_maintenance import review
+
+            result = review(actor_id, args.apply, args.days, args.limit, args.cursor)
+        print(json.dumps(result))
     else:
         cleanup_expired()
     print("Maintenance command completed. Record sanitized verification evidence separately.")

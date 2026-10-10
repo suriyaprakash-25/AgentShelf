@@ -57,13 +57,12 @@ Reconciliation re-reads known PayPal orders and retries approved captures with s
 IDs. Uncertain creation/capture keeps stock and budget reserved. Only provider VOIDED
 proof releases an abandoned checkout. This deliberately does not satisfy the source's
 unconditional 15-minute release requirement yet: resolve the provider-expiry policy
-through ADR-001 before release. Unknown create IDs need manual correlation.
+through ADR-001 before release. Unknown create IDs can now be correlated through the operator screen: verified provider identity, amount, currency, payee and custom ID are required; this action does not initiate approval or capture. Real recovery drills remain pending.
 
 WhatsApp delivery is at least once across a crash after sending. Multi-photo messages
 are grouped up to four images with a short debounce; duplicates use stable IDs.
 Hourly cleanup removes expired auth records/stale quota buckets and clears old chat
-text after 30 days while preserving payment/budget records. Unreferenced media cleanup,
-historical inbox/address retention audit and managed backup retention remain open.
+text after 30 days while preserving payment/budget records. Bounded, operator-audited orphan media and historical inbox/address maintenance are implemented with dry-run defaults. Referenced images, pending work, payment records and dispute/reversal addresses are preserved. Owner retention approval and managed backup acceptance remain open.
 
 ## Deployment and release boundaries
 
@@ -71,7 +70,7 @@ API serves the built frontend from one HTTPS origin; worker uses the same databa
 private R2 bucket and provider/email secrets. Docker now builds successfully. The non-root packaged API starts against an isolated
 PostgreSQL 17 container and serves the catalog/UI with security headers; migrations
 report no drift. The full native suite uses PostgreSQL 18.4. Remote CI remains unverified.
-The seller bundle is approximately 1 MB and optional Studio approximately 4.36 MB before compression; Lighthouse/LCP/accessibility targets are unverified.
+The seller bundle is approximately 1 MB and optional Studio approximately 4.36 MB before compression; The October 10 local mobile storefront audit scores performance 91, accessibility 100 and LCP 2.0 seconds after local fonts, compression and heading fixes. Hosted targets and all authenticated screens remain unverified.
 AG Studio 3.0.0 is integrated with a custom shop widget, theme and Studio Agent Framework analyst.
 The actual component/analyst browser flow passes using controlled aggregate/AI responses.
 It loads on demand; production activation requires VITE_AG_STUDIO_LICENSE_KEY.
@@ -84,8 +83,7 @@ require provider setup, permissions, webhooks, templates, domains and acceptance
 Worldwide access is a product goal; receiving eligibility remains merchant-specific.
 USD and US/UK shipping are the initial supported commerce policy.
 
-Next: finish local verification and reviewable commit, then run the provider/staging
-acceptance checklist in the runbook when account access is available. Should features
+Latest credential-free phase: 175 backend tests and 5 browser tests pass; native PostgreSQL backup/restore passes and the migrated application database reports no drift. The current container rebuild is blocked by Docker Desktop HTTP 500 after D: filled. See OWNER_HANDOFF.md for evidence and the remaining acceptance checklist. Should features
 remain deferred until Gate 2, as required by the source roadmap.
 
 ## AG Studio analytics boundary

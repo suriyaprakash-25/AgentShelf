@@ -39,8 +39,8 @@ def parse_event(raw):
         raise DomainError("INVALID_EVENT", "Expected a valid JSON event.", 400) from exc
 
 
-def persist_paypal(event):
-    """Insert a verified event and its job atomically, or recognize a duplicate."""
+def minimize_paypal(event):
+    """Preserve verified accounting references without buyer personal data."""
     # Signature verification uses the full original body first. The durable inbox
     # retains only correlation/accounting fields; shipping details belong on orders.
     resource = event["resource"]
@@ -61,7 +61,13 @@ def persist_paypal(event):
                 key: related[key] for key in ("order_id", "capture_id") if key in related
             }
         }
-    stored = {"id": event["id"], "event_type": event["event_type"], "resource": minimal}
+    return {"id": event["id"], "event_type": event["event_type"], "resource": minimal}
+
+
+def persist_paypal(event):
+    """Insert a verified event and its job atomically, or recognize a duplicate."""
+    stored = minimize_paypal(event)
+    resource_id = stored["resource"]["id"]
     with session_factory() as db, db.begin():
         inserted = db.scalar(
             insert(WebhookEvent)

@@ -17,6 +17,10 @@ def test_real_dump_restore_preserves_catalog_and_budget(db_clean, monkeypatch, t
     dump = os.environ.get("PG_DUMP") or shutil.which("pg_dump")
     restore = os.environ.get("PG_RESTORE") or shutil.which("pg_restore")
     if not dump or not restore or not Path(dump).is_file() or not Path(restore).is_file():
+        if os.environ.get("CI"):
+            pytest.fail(
+                "CI requires matching PostgreSQL backup clients; the drill must not silently skip."
+            )
         pytest.skip("Restore drill requires pg_dump and pg_restore matching server major version")
     fixture_data()
     source = os.environ["TEST_DATABASE_URL"]

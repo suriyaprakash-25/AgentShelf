@@ -37,17 +37,19 @@ def caption_text(value):
 def upload(seller_id, raw, asset_id=None):
     clean = preprocess_image(raw)
     asset_id = asset_id or uuid.uuid4()
-    with session_factory() as db:
+    rate_limits.consume_ip(str(seller_id), "uploads", 120, 3600)
+    key = f"{get_settings().paypal_mode}/{seller_id}/{asset_id}.jpg"
+    with session_factory() as db, db.begin():
+        # Serialize stable-ID retries with cleanup, including objects with no DB row yet.
+        db.execute(select(func.pg_advisory_xact_lock(func.hashtextextended(str(asset_id), 0))))
         existing = db.get(MediaAsset, asset_id)
-        if existing and existing.seller_id == seller_id:
+        if existing:
+            if existing.seller_id != seller_id:
+                raise DomainError("MEDIA_NOT_FOUND", "This photo is unavailable.", 404)
             return {
                 "id": str(existing.id),
                 "url": get_settings().public_api_url + f"/api/media/{existing.id}",
             }
-    rate_limits.consume_ip(str(seller_id), "uploads", 120, 3600)
-    key = f"{get_settings().paypal_mode}/{seller_id}/{asset_id}.jpg"
-    storage.put(key, clean)
-    with session_factory() as db, db.begin():
         db.add(
             MediaAsset(
                 id=asset_id,
@@ -56,6 +58,8 @@ def upload(seller_id, raw, asset_id=None):
                 sha256=hashlib.sha256(clean).hexdigest(),
             )
         )
+        db.flush()
+        storage.put(key, clean)
     return {"id": str(asset_id), "url": get_settings().public_api_url + f"/api/media/{asset_id}"}
 
 
@@ -85,11 +89,13 @@ def create(seller_id, media_ids, caption, request_id=None, phone=None):
             raise DomainError("RATE_LIMITED", "You can request 30 listing drafts per hour.", 429)
         assets = list(
             db.scalars(
-                select(MediaAsset).where(
+                select(MediaAsset)
+                .where(
                     MediaAsset.id.in_(media_ids),
                     MediaAsset.seller_id == seller_id,
                     MediaAsset.product_id.is_(None),
                 )
+                .with_for_update()
             )
         )
         if len(assets) != len(media_ids):
