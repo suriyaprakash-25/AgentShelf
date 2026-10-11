@@ -176,3 +176,18 @@ development with controlled data/model responses. Fixed three damaged loading la
 The Render blueprint explicitly lists the existing Docker licence build argument.
 Licence acquisition/validation, a licensed production rebuild and real Anthropic
 acceptance remain open; no fake key, trial activation or provider call was used.
+
+## Listing evaluation runner and scorer
+
+The preceding Studio optimization 8a6c26d passed all five CI jobs:
+https://github.com/suriyaprakash-25/AgentShelf/actions/runs/38111656286.
+Added an actual-provider listing runner and strict scorer for the roadmap's 20 real
+products, balanced 5/5/5/5. Input preflight validates image paths/content/captions and
+rejects duplicates before calls. Records bind dataset, processed images, run and human
+reviews by hashes. Twenty focused protocol tests pass (3.22 seconds), including
+incomplete/failure rejection, exact category/rating/p95 boundaries and private-output
+exclusion. Fixtures are synthetic; no real photograph/model/quality run is claimed.
+Public summaries distinguish local model-call latency from hosted workflow latency
+and never grant gate approval. Templates remain invalid until actual photos, labels
+and ratings are entered. Private artifacts are ignored. Full quality, hosted latency,
+buyer task and review gate acceptance remain open; see evals/README.md.

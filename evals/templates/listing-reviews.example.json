@@ -1,0 +1,106 @@
+{
+  "run_sha256": "",
+  "reviewer_id": "",
+  "reviews": [
+    {
+      "id": "jewellery-01",
+      "rating": null,
+      "invented_claim": null
+    },
+    {
+      "id": "jewellery-02",
+      "rating": null,
+      "invented_claim": null
+    },
+    {
+      "id": "jewellery-03",
+      "rating": null,
+      "invented_claim": null
+    },
+    {
+      "id": "jewellery-04",
+      "rating": null,
+      "invented_claim": null
+    },
+    {
+      "id": "jewellery-05",
+      "rating": null,
+      "invented_claim": null
+    },
+    {
+      "id": "textiles-01",
+      "rating": null,
+      "invented_claim": null
+    },
+    {
+      "id": "textiles-02",
+      "rating": null,
+      "invented_claim": null
+    },
+    {
+      "id": "textiles-03",
+      "rating": null,
+      "invented_claim": null
+    },
+    {
+      "id": "textiles-04",
+      "rating": null,
+      "invented_claim": null
+    },
+    {
+      "id": "textiles-05",
+      "rating": null,
+      "invented_claim": null
+    },
+    {
+      "id": "crafts-01",
+      "rating": null,
+      "invented_claim": null
+    },
+    {
+      "id": "crafts-02",
+      "rating": null,
+      "invented_claim": null
+    },
+    {
+      "id": "crafts-03",
+      "rating": null,
+      "invented_claim": null
+    },
+    {
+      "id": "crafts-04",
+      "rating": null,
+      "invented_claim": null
+    },
+    {
+      "id": "crafts-05",
+      "rating": null,
+      "invented_claim": null
+    },
+    {
+      "id": "prints-01",
+      "rating": null,
+      "invented_claim": null
+    },
+    {
+      "id": "prints-02",
+      "rating": null,
+      "invented_claim": null
+    },
+    {
+      "id": "prints-03",
+      "rating": null,
+      "invented_claim": null
+    },
+    {
+      "id": "prints-04",
+      "rating": null,
+      "invented_claim": null
+    },
+    {
+      "id": "prints-05",
+      "rating": null,
+      "invented_claim": null
+    }
+  ]
+}

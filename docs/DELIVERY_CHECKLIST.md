@@ -27,6 +27,7 @@ Source roadmap acceptance and independent release gates remain separate.
 - [x] Unlicensed production omits Studio entirely and avoids analytics calls; development component still verified. Render licence build variable is documented.
 - [x] Same-origin deployment container built; non-root runtime/migrations/catalog/UI checked with PostgreSQL 17.
 - [x] API/worker/private-storage blueprint authored.
+- [x] Listing evaluation runner/scorer and blank dataset/review templates; 20 protocol tests pass. Real quality/latency evaluation remains pending.
 - [x] External API/database uptime probe, sanitized failure evidence, inactive scheduled workflow and 14 operations tests; local database outage detected.
 
 - [x] Bounded JSON/MCP bodies, verified lost-order correlation and auditable dry-run retention tools.

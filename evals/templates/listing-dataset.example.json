@@ -1,0 +1,245 @@
+{
+  "source": "team_photographed_products",
+  "cases": [
+    {
+      "id": "jewellery-01",
+      "category": "jewellery",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    },
+    {
+      "id": "jewellery-02",
+      "category": "jewellery",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    },
+    {
+      "id": "jewellery-03",
+      "category": "jewellery",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    },
+    {
+      "id": "jewellery-04",
+      "category": "jewellery",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    },
+    {
+      "id": "jewellery-05",
+      "category": "jewellery",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    },
+    {
+      "id": "textiles-01",
+      "category": "textiles",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    },
+    {
+      "id": "textiles-02",
+      "category": "textiles",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    },
+    {
+      "id": "textiles-03",
+      "category": "textiles",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    },
+    {
+      "id": "textiles-04",
+      "category": "textiles",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    },
+    {
+      "id": "textiles-05",
+      "category": "textiles",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    },
+    {
+      "id": "crafts-01",
+      "category": "crafts",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    },
+    {
+      "id": "crafts-02",
+      "category": "crafts",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    },
+    {
+      "id": "crafts-03",
+      "category": "crafts",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    },
+    {
+      "id": "crafts-04",
+      "category": "crafts",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    },
+    {
+      "id": "crafts-05",
+      "category": "crafts",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    },
+    {
+      "id": "prints-01",
+      "category": "prints",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    },
+    {
+      "id": "prints-02",
+      "category": "prints",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    },
+    {
+      "id": "prints-03",
+      "category": "prints",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    },
+    {
+      "id": "prints-04",
+      "category": "prints",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    },
+    {
+      "id": "prints-05",
+      "category": "prints",
+      "images": [],
+      "caption": "",
+      "expected_attributes": {
+        "material": null,
+        "colour": null,
+        "size_hint": null,
+        "handmade": null
+      }
+    }
+  ]
+}

@@ -139,3 +139,13 @@ checks in 16.7 seconds; development still verifies the actual Studio widget/anal
 using controlled responses. Render now exposes the existing Docker licence build arg
 as a web-service variable. A valid owner-supplied licence, rebuild and staged acceptance
 are still required. No licence, trial or real model call was activated in this phase.
+
+## Listing evaluation preparation
+
+The listing runner and scorer are ready for the roadmap's 20 real team-photographed
+products and human review. Copy/fill the invalid blank templates in evals/templates,
+configure actual Anthropic access after the five-photo spike and follow evals/README.md.
+The tool computes exact category/rating/claim and local-call p95 targets, rejects
+missing/failed/unbound evidence, preserves old outputs and emits only aggregate public
+summaries. Protocol tests are synthetic and do not establish product quality or hosted
+latency. Real photographs, labels, ratings, staging measurements and approval are open.

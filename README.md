@@ -59,6 +59,8 @@ Anthropic is the selected provider. Model choice requires the Sprint 0 evaluatio
 listing and agent results are not fabricated. Models never own prices, stock, budget
 or payment approval. Buyer addresses must not enter a model or log.
 Listing quality, buyer task success and real latency metrics are pending.
+The [evaluation guide](evals/README.md) provides the real-photo listing runner, strict
+scoring and human-review templates. Its protocol tests are not quality results.
 
 ## Quality checks
 
