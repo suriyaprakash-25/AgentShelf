@@ -160,3 +160,19 @@ Two added backend tests check the SQL health query, outage response, cache heade
 and private-error exclusion (2 passed in 6.41 seconds). Container smoke now requires
 the health cache header on the packaged API. Full updated backend/packaged behavior
 is checked separately by the follow-up revision CI; the earlier 190 count is historical.
+
+## Studio omission for unlicensed production builds
+
+The preceding health-cache revision 26a0d4e passed all five CI jobs:
+https://github.com/suriyaprakash-25/AgentShelf/actions/runs/38111351621.
+Unlicensed production now checks the licence before importing Studio. The built dist
+contains no AnalyticsStudio chunk; clicking the licence notice fetches neither Studio
+code nor analytics API data. The seller chunk shrank from 1,007.30 KB (283.31 KB gzip)
+to 885.89 KB (249.45 KB gzip). Previously Studio was 4,363.84 KB (1,242.29 KB gzip).
+These are build-size measurements, not new Lighthouse or hosted latency evidence.
+Frontend lint, format and build pass; 13 development tests pass in 14.2 seconds and
+12 packaged tests in 16.7 seconds. The actual Studio widget/analyst still works in
+development with controlled data/model responses. Fixed three damaged loading labels.
+The Render blueprint explicitly lists the existing Docker licence build argument.
+Licence acquisition/validation, a licensed production rebuild and real Anthropic
+acceptance remain open; no fake key, trial activation or provider call was used.

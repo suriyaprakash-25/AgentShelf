@@ -33,6 +33,9 @@ services:
         sync: false
       - key: BROWSER_SENTRY_DSN
         sync: false
+      # Browser-visible commercial licence; blank builds omit Studio entirely.
+      - key: VITE_AG_STUDIO_LICENSE_KEY
+        sync: false
       - key: WHATSAPP_PAID_TEMPLATE
         sync: false
       - key: MEDIA_BACKEND

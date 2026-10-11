@@ -332,6 +332,15 @@ monitoring transport and the missing deployment-licence gate. The source-module
 privacy-filter unit check runs in `npm run test:e2e` through Vite instead.
 The production suite expects a build without VITE_AG_STUDIO_LICENSE_KEY; licensed
 Studio acceptance still requires the separate staged check with a valid licence.
+Production builds without a licence now omit the Studio bundle entirely. The seller
+screen shows the licence notice without fetching Studio code or analytics API data.
+Development still loads the actual Studio component. Configure the browser-visible
+VITE_AG_STUDIO_LICENSE_KEY web-service variable and rebuild to include Studio after
+obtaining the approved licence. The Dockerfile already accepts this build argument;
+render.yaml now lists it explicitly. Render translates service environment variables
+to Docker build arguments: https://render.com/docs/docker. Never use a provider API
+secret as this variable. Enabling the build path does not establish licence validity
+or real model acceptance; verify those on HTTPS staging with the licence owner.
 CI runs both suites. Provider responses remain controlled in workflow tests.
 
 The SDK wrapper exports only init and captureMessage, reducing the optional built

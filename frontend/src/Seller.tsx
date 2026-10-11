@@ -20,7 +20,11 @@ import {
 import { api } from "./api";
 import { ListingStudio } from "./ListingStudio";
 
-const AnalyticsStudio = lazy(() => import("./AnalyticsStudio"));
+// Avoid downloading the licensed feature when this build cannot enable it.
+const AnalyticsStudio =
+  import.meta.env.DEV || import.meta.env.VITE_AG_STUDIO_LICENSE_KEY
+    ? lazy(() => import("./AnalyticsStudio"))
+    : null;
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -247,11 +251,17 @@ export function SellerDashboard() {
       >
         {showAnalytics ? "Close shop analytics" : "Open shop analytics"}
       </button>
-      {showAnalytics && (
-        <Suspense fallback={<p role="status">Loading analytics�</p>}>
-          <AnalyticsStudio csrf={me.csrf_token} />
-        </Suspense>
-      )}
+      {showAnalytics &&
+        (AnalyticsStudio ? (
+          <Suspense fallback={<p role="status">Loading analytics…</p>}>
+            <AnalyticsStudio csrf={me.csrf_token} />
+          </Suspense>
+        ) : (
+          <p>
+            Analytics Studio requires a deployment licence. Your catalog and
+            orders remain available below.
+          </p>
+        ))}
       <ListingStudio csrf={me.csrf_token} refresh={() => load()} />
       <div className="panel">
         <h2>Create a product draft</h2>

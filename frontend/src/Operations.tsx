@@ -84,8 +84,8 @@ export function Operations() {
       <h1>Review and recover.</h1>
       <Link to="/dashboard">Seller dashboard</Link>
       {error && <p role="alert">{error}</p>}
-      {!data && !error && <p role="status">Loading operations�</p>}
-      {busy && <p role="status">Verifying your recovery action�</p>}
+      {!data && !error && <p role="status">Loading operations…</p>}
+      {busy && <p role="status">Verifying your recovery action…</p>}
       {data && (
         <>
           <section className="panel">

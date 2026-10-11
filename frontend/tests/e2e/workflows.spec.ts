@@ -174,6 +174,11 @@ test("controlled listing review uses seller price and explicit publication", asy
 test("AG Studio renders controlled aggregates or enforces the production licence gate", async ({
   page,
 }, testInfo) => {
+  const studioRequests: string[] = [];
+  page.on("request", (request) => {
+    if (/AnalyticsStudio|ag-studio|\/api\/me\/analytics/.test(request.url()))
+      studioRequests.push(request.url());
+  });
   await page.route("**/api/me", (route) =>
     route.fulfill({
       json: {
@@ -227,6 +232,7 @@ test("AG Studio renders controlled aggregates or enforces the production licence
       }),
     ).toBeVisible();
     await expect(page.locator(".analytics-studio")).toHaveCount(0);
+    expect(studioRequests).toEqual([]);
     return;
   }
   await expect(
@@ -242,6 +248,9 @@ test("AG Studio renders controlled aggregates or enforces the production licence
       exact: true,
     }),
   ).toBeVisible();
+  expect(studioRequests.some((url) => url.includes("/api/me/analytics"))).toBe(
+    true,
+  );
   await page.locator(".analytics-studio").scrollIntoViewIfNeeded();
   await page.screenshot({
     path: "../work/studio-desktop.png",

@@ -52,8 +52,9 @@ Postgres was stopped; tests used fresh, separate demo/test databases. Original d
 files were untouched. Frontend dependencies were reinstalled locally; the earlier E: junction is no longer active. Preserved E: files remain untouched.
 This container evidence does not establish funded deployment or provider acceptance.
 
-Seller and optional AG Studio chunks remain large (approximately 1.01 MB and 4.36 MB
-before compression); they load separately. Test authenticated seller/Studio performance
+The prior Studio-including build had approximately 1.01 MB seller and 4.36 MB Studio
+chunks before compression. The unlicensed build now omits Studio and has an 885.89 KB
+seller chunk (249.45 KB gzip). Test authenticated seller/Studio performance
 on hosted devices before enabling the licensed Studio pilot. Local media cleanup is a
 bounded first page; use R2 continuation tokens for a complete production inventory.
 
@@ -127,3 +128,14 @@ it. Set STAGING_ORIGIN after HTTPS sandbox staging exists, review/merge the work
 onto the default branch, configure owner/backup failure notifications and complete
 the staged outage/recovery/notification drill in RUNBOOK.md. Missing configuration
 leaves scheduled checks inactive; it is not external monitoring acceptance.
+
+## Studio build optimization
+
+Unlicensed production builds omit the optional 4.36 MB Studio chunk and avoid analytics
+API calls when showing the licence notice. The seller chunk is 885.89 KB (249.45 KB
+gzip), down from 1,007.30 KB (283.31 KB gzip). This is a build-size result, not a hosted
+latency result. Thirteen development checks passed in 14.2 seconds and twelve packaged
+checks in 16.7 seconds; development still verifies the actual Studio widget/analyst
+using controlled responses. Render now exposes the existing Docker licence build arg
+as a web-service variable. A valid owner-supplied licence, rebuild and staged acceptance
+are still required. No licence, trial or real model call was activated in this phase.

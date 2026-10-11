@@ -24,6 +24,7 @@ Source roadmap acceptance and independent release gates remain separate.
 - [x] Actual local backup/restore drill and guarded synthetic sandbox reset.
 - [x] Local 1,000-product search/pagination check and completed browser runner.
 - [x] Actual AG Studio custom widget/theme and framework analyst, locally browser tested.
+- [x] Unlicensed production omits Studio entirely and avoids analytics calls; development component still verified. Render licence build variable is documented.
 - [x] Same-origin deployment container built; non-root runtime/migrations/catalog/UI checked with PostgreSQL 17.
 - [x] API/worker/private-storage blueprint authored.
 - [x] External API/database uptime probe, sanitized failure evidence, inactive scheduled workflow and 14 operations tests; local database outage detected.
