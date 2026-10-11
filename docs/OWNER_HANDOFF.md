@@ -27,15 +27,15 @@ real provider tests, deployed measurements and merchant decisions are still requ
   PostgreSQL backup clients; added compose.verify.yaml and a sanitized smoke report tool.
 - Full backend suite: **190 passed in 103.45 seconds**, including actual local native
   PostgreSQL 17 backup and restore; no skipped tests in the final run.
-- Browser suite: **11 passed in 14.4 seconds**: real seeded catalog/quote/mobile layout
+- Browser suite: **13 development checks passed in 12.2 seconds**, plus **12 packaged checks in 14.7 seconds**: real seeded catalog/quote/mobile layout
   and controlled AI, listing and actual AG Studio flows. Real checkout is not covered.
 - Frontend build, lint and formatting passed. Dependency audits found no known
   vulnerabilities at audit time. Ruff passed. The migrated application database
   reports no new migration operations. Test fixtures are not used as migration proof.
 - Local mobile storefront Lighthouse: **performance 91, accessibility 100, LCP 2.0 s**;
   before fixes: 69, 98, 4.2 s. One local route/run, not a hosted or all-screen result.
-- The preceding revision 4ee8a82 has fully green GitHub CI, including browser cleanup:
-  https://github.com/suriyaprakash-25/AgentShelf/actions/runs/38037184879.
+- The preceding monitoring revision ac6f21d has fully green GitHub CI, including browser cleanup:
+  https://github.com/suriyaprakash-25/AgentShelf/actions/runs/38110401055.
   New changes are committed/pushed after verification; their CI is separate evidence.
 - Added operator loading/empty states and controlled recovery/retry/denial/mobile
   browser coverage; seven new retention and R2 adapter regression cases pass.
@@ -108,3 +108,12 @@ React rendering failures have a reload screen with existing-order guidance.
 Actual-SDK browser tests intercept transport and pass; account receipt and alert
 routing still require owner-provided Sentry configuration and staged evidence.
 Use the browser monitoring section of RUNBOOK.md for setup and acceptance.
+
+## Packaged frontend verification
+
+The monitoring SDK wrapper cuts its optional chunk from 435.88 KB to 93.29 KB
+(146.72 KB to 32.02 KB gzip). CI runs the built dist workflows on port 5174
+in addition to development checks. Missing/unavailable monitoring keeps the
+catalog working without fetching the SDK. The packaged Studio check verifies
+its missing-licence gate and continuing catalog access; actual licensed Studio
+acceptance remains open. See RUNBOOK.md for the production-check command.

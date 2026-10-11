@@ -16,7 +16,8 @@ they must not be read as a current implementation assessment.
 | Alembic upgrade/downgrade/upgrade and schema drift | Passed | Dedicated local migration database |
 | Dependency audit | No known backend/frontend vulnerabilities | Installed dependency snapshot |
 | Frontend lint, format and production build | Passed after AG Studio integration | No staging performance claim |
-| Browser suite | Eleven tests passed, 14.4 seconds | Actual API catalog/mobile plus controlled listing/SSE/Studio/operator recovery and actual browser SDK fixtures |
+| Development browser suite | Thirteen tests passed, 12.2 seconds | Actual API catalog/mobile plus controlled listing/SSE/Studio/operator recovery and actual browser SDK fixtures |
+| Packaged browser suite | Twelve tests passed, 14.7 seconds | Built dist on strict port 5174; controlled providers; missing licence gate verified |
 | PostgreSQL 17 container payment/worker checks | 24 passed, 11.65 seconds | Orders, capture, webhooks, jobs and reconciliation; controlled providers |
 | Docker build/runtime | Built; UID 10001, PG17 migrations/no drift, DB health, six products and frontend/security headers | Isolated local container; no hosted deployment |
 | Backup and restore | Actual dump restored catalog stock, session budget and quote amount | Separate random empty loopback test DB; no managed-provider backup proof |
@@ -126,3 +127,16 @@ transport is intercepted in browser tests; real Sentry receipt/alerts remain ope
 Frontend dependencies were reinstalled as an ordinary local node_modules directory;
 the earlier E: junction is no longer the active dependency path. Preserved E: files
 remain untouched. Source roadmap/PDF remain unchanged.
+
+## Optional SDK optimization and packaged browser checks
+
+The optional SDK chunk is 93.29 KB (32.02 KB gzip), down from 435.88 KB
+(146.72 KB gzip). This is a measured build-size improvement, not a hosted
+performance result. Disabled/unavailable monitoring does not download the SDK
+and preserves catalog use. Thirteen development and twelve packaged browser
+tests pass. The packaged suite checks the deployment-licence gate rather than
+bypassing it; the source-module privacy unit check stays in development.
+CI now runs both browser suites. Previous monitoring revision ac6f21d passed
+all five jobs: https://github.com/suriyaprakash-25/AgentShelf/actions/runs/38110401055.
+The optimized revision CI is separate evidence. Provider receipt, licensed
+Studio deployment and all staging/live gates remain unaccepted.

@@ -171,9 +171,9 @@ test("controlled listing review uses seller price and explicit publication", asy
   });
 });
 
-test("actual AG Studio renders a custom shop widget from controlled seller aggregates", async ({
+test("AG Studio renders controlled aggregates or enforces the production licence gate", async ({
   page,
-}) => {
+}, testInfo) => {
   await page.route("**/api/me", (route) =>
     route.fulfill({
       json: {
@@ -214,6 +214,21 @@ test("actual AG Studio renders a custom shop widget from controlled seller aggre
   });
   await page.goto("/dashboard");
   await page.getByRole("button", { name: "Open shop analytics" }).click();
+  if (testInfo.project.name === "production-without-license") {
+    await expect(
+      page.getByText("Analytics Studio requires a deployment licence.", {
+        exact: false,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: "Create a product draft",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(page.locator(".analytics-studio")).toHaveCount(0);
+    return;
+  }
   await expect(
     page.getByText("Available stock: 7", { exact: true }),
   ).toBeVisible({ timeout: 30000 });

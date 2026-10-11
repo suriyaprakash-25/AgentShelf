@@ -110,6 +110,11 @@ jobs:
         working-directory: frontend
       - run: npm run test:e2e
         working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+      - name: Verify packaged browser workflows
+        run: npm run test:e2e:production
+        working-directory: frontend
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

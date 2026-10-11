@@ -321,3 +321,20 @@ intercepted transport; they prove payload filtering, deduplication and UI recove
 not receipt by a real Sentry account. On staging, reproduce a reviewed error, confirm
 its fixed-code event in the intended project and test actual alert receipt. Do not
 add a public crash endpoint or publish a login/address screenshot as evidence.
+
+## Packaged frontend regression checks
+
+With the seeded local API running on port 8000, run `npm run build` followed by
+`npm run test:e2e:production` from frontend. This starts the dist preview on port
+5174 with strict port binding; development checks use port 5173. Production checks
+cover catalog/quote/mobile, listing, buyer confirmation, operator recovery, actual
+monitoring transport and the missing deployment-licence gate. The source-module
+privacy-filter unit check runs in `npm run test:e2e` through Vite instead.
+The production suite expects a build without VITE_AG_STUDIO_LICENSE_KEY; licensed
+Studio acceptance still requires the separate staged check with a valid licence.
+CI runs both suites. Provider responses remain controlled in workflow tests.
+
+The SDK wrapper exports only init and captureMessage, reducing the optional built
+chunk from 435.88 KB (146.72 KB gzip) to 93.29 KB (32.02 KB gzip). Both measurements
+are build sizes, not a hosted latency or Lighthouse result. Missing/disabled browser
+monitoring configuration does not fetch this chunk; catalog use remains available.

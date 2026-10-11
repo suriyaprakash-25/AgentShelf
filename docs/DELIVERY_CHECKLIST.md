@@ -28,7 +28,8 @@ Source roadmap acceptance and independent release gates remain separate.
 - [x] API/worker/private-storage blueprint authored.
 
 - [x] Bounded JSON/MCP bodies, verified lost-order correlation and auditable dry-run retention tools.
-- [x] October 11 full local suite: 190 backend tests, 11 browser tests, PostgreSQL 17 restore and no migration drift.
+- [x] October 11 full local suite: 190 backend tests, 13 development and 12 packaged browser tests, PostgreSQL 17 restore and no migration drift.
+- [x] Smaller optional monitoring SDK and packaged dist workflows, including missing-licence gate.
 - [x] Operator confirmation/error/retry/denial/mobile browser checks and retention/R2 regression cases.
 - [x] Recovered local Docker: fresh image, non-root API, worker heartbeat, gzip/cache/auth smoke checks.
 - [x] Local mobile storefront: performance 91, accessibility 100, LCP 2.0 seconds.
@@ -43,7 +44,7 @@ Source roadmap acceptance and independent release gates remain separate.
 - [ ] Anthropic spike/model choice, 20-product quality, image-instruction/PII tests and draft latency.
 - [ ] Fifteen buyer tasks, money-path browser flow and independent MCP Inspector/client tests.
 - [ ] AG Studio deployment licence covering judging and real model acceptance.
-- [x] Remote PostgreSQL 17 backend/container checks and complete-history secret scan and fully green CI on preceding revision 4ee8a82.
+- [x] Remote PostgreSQL 17 backend/container checks and complete-history secret scan and fully green CI on preceding monitoring revision ac6f21d.
 - [ ] Funded hosted startup and real provider checks.
 - [ ] Funded HTTPS staging; verify origin/cookies/CSP/proxy quotas and external purchase under five minutes.
 - [ ] Managed backups/restore/retention and owner-approved execution of media/personal-data maintenance.

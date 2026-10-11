@@ -90,7 +90,7 @@ export async function setupBrowserMonitoring() {
     )
       throw new Error("Invalid monitoring environment");
     monitoringEnvironment = config.environment;
-    const sdk = await import("@sentry/browser");
+    const sdk = await import("./monitoring-sdk");
     sdk.init({
       dsn: config.dsn,
       environment: config.environment,

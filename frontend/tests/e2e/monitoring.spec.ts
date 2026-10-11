@@ -2,6 +2,31 @@ import { expect, test } from "@playwright/test";
 
 const publicDsn = `https://${"a".repeat(32)}@o999.ingest.sentry.io/999`;
 
+for (const status of [200, 503]) {
+  test(`monitoring ${status === 200 ? "disabled" : "unavailable"} preserves catalog without loading its SDK`, async ({
+    page,
+  }) => {
+    const monitoringRequests: string[] = [];
+    page.on("request", (request) => {
+      if (/monitoring-sdk|@sentry|ingest\.sentry\.io/.test(request.url()))
+        monitoringRequests.push(request.url());
+    });
+    await page.route("**/api/monitoring-config", (route) =>
+      route.fulfill({ status, json: { dsn: null, environment: "test" } }),
+    );
+    const configuration = page.waitForResponse("**/api/monitoring-config");
+    await page.goto("/");
+    await configuration;
+    await page
+      .getByRole("link", { name: "Explore the demo collection" })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Indigo block print scarf" }),
+    ).toBeVisible();
+    expect(monitoringRequests).toEqual([]);
+  });
+}
+
 test("actual browser SDK sends only fixed codes and deduplicates errors", async ({
   page,
 }) => {
