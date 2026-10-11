@@ -1,6 +1,5 @@
 """Actual socket MCP agent flow; controlled model/provider responses are not acceptance."""
 
-import asyncio
 import socket
 import threading
 import time
@@ -104,22 +103,27 @@ def test_agent_uses_real_mcp_and_human_confirmation(socket_server, provider, mon
     with session_factory() as db:
         assert db.query(Order).count() == 0
         assert db.get(AgentSession, uuid.UUID(session)).chat_lease is None
-    state = buyer_agent.acquire(uuid.UUID(session), "", uuid.UUID(review["quote_id"]))
-
-    async def confirm():
-        return [
-            e
-            async for e in buyer_agent.events(
-                uuid.UUID(session), state, "GB", uuid.UUID(review["quote_id"])
-            )
-        ]
-
-    confirmed = asyncio.run(confirm())
+    confirmation = httpx.post(
+        socket_server + "/api/playground/chat",
+        json={
+            "session_id": session,
+            "ship_to_country": "GB",
+            "confirmed_quote_id": review["quote_id"],
+        },
+        timeout=40,
+    )
+    assert confirmation.status_code == 200
+    confirmed = [
+        json.loads(line[6:]) for line in confirmation.text.splitlines() if line.startswith("data: ")
+    ]
     assert any(e["type"] == "checkout" for e in confirmed)
+    assert confirmed[-1] == {"type": "done"}
+    assert sum(e["type"] == "done" for e in confirmed) == 1
     assert len(provider) == 1
     with session_factory() as db:
         assert db.query(Order).count() == 1
         assert db.get(AgentSession, uuid.UUID(session)).pending_quote_id is None
+        assert db.get(AgentSession, uuid.UUID(session)).chat_lease is None
 
 
 def test_concurrent_chat_and_quote_ownership_and_quota(db_clean):

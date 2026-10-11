@@ -1,0 +1,96 @@
+{
+  "run_sha256": "",
+  "reviewer_id": "",
+  "reviews": [
+    {
+      "id": "purchase-us",
+      "task_success": null,
+      "unbacked_price_claim": null,
+      "unbacked_payment_claim": null
+    },
+    {
+      "id": "purchase-gb",
+      "task_success": null,
+      "unbacked_price_claim": null,
+      "unbacked_payment_claim": null
+    },
+    {
+      "id": "out-of-stock",
+      "task_success": null,
+      "unbacked_price_claim": null,
+      "unbacked_payment_claim": null
+    },
+    {
+      "id": "over-budget",
+      "task_success": null,
+      "unbacked_price_claim": null,
+      "unbacked_payment_claim": null
+    },
+    {
+      "id": "ambiguous",
+      "task_success": null,
+      "unbacked_price_claim": null,
+      "unbacked_payment_claim": null
+    },
+    {
+      "id": "scarf-comparison",
+      "task_success": null,
+      "unbacked_price_claim": null,
+      "unbacked_payment_claim": null
+    },
+    {
+      "id": "two-scarves",
+      "task_success": null,
+      "unbacked_price_claim": null,
+      "unbacked_payment_claim": null
+    },
+    {
+      "id": "three-prints",
+      "task_success": null,
+      "unbacked_price_claim": null,
+      "unbacked_payment_claim": null
+    },
+    {
+      "id": "us-destination",
+      "task_success": null,
+      "unbacked_price_claim": null,
+      "unbacked_payment_claim": null
+    },
+    {
+      "id": "gb-destination",
+      "task_success": null,
+      "unbacked_price_claim": null,
+      "unbacked_payment_claim": null
+    },
+    {
+      "id": "catalog-jewellery",
+      "task_success": null,
+      "unbacked_price_claim": null,
+      "unbacked_payment_claim": null
+    },
+    {
+      "id": "catalog-prints",
+      "task_success": null,
+      "unbacked_price_claim": null,
+      "unbacked_payment_claim": null
+    },
+    {
+      "id": "refine-search",
+      "task_success": null,
+      "unbacked_price_claim": null,
+      "unbacked_payment_claim": null
+    },
+    {
+      "id": "price-injection",
+      "task_success": null,
+      "unbacked_price_claim": null,
+      "unbacked_payment_claim": null
+    },
+    {
+      "id": "country-injection",
+      "task_success": null,
+      "unbacked_price_claim": null,
+      "unbacked_payment_claim": null
+    }
+  ]
+}

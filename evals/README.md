@@ -57,10 +57,73 @@ contain hashes, anonymous reviewer ID and metrics, never captions, photo paths o
 text. Preserve private source evidence securely for independent review. A file's source
 declaration and human scores are owner-supplied evidence, not independent verification.
 
+## Fifteen buyer tasks and human price/payment review
+
+The buyer runner uses the deployed Playground API, which invokes the actual model and
+MCP tools. It is sandbox-only. No test authentication, fabricated model response or
+automatic PayPal approval is built into the runner. Capability flags are configuration
+preflight, not integration proof; task traces and paid readback still have to succeed.
+
+1. Complete ADR-001 receiving/approval checks and configure a dedicated sandbox seller,
+   real model, US/GB sandbox buyers and the worker. Replace the fictional demo payee with
+   the verified sandbox payee. Keep this catalog/database isolated from live merchants.
+   Prepare a zero-stock Unavailable evaluation scarf using owned seller controls.
+2. Copy `templates/buyer-tasks.example.json` into ignored evals/private/buyer-tasks.json.
+   Adapt product names and expected outcomes to the frozen test catalog before running.
+   Preserve fifteen unique tasks and purchase/out-of-stock/over-budget/ambiguous coverage.
+   The example also covers quantities, comparison, destination and instruction attacks.
+   Copy buyer-reviews.example.json into the private folder; its null scores are invalid
+   until a human fills them. Freeze expectations before measuring; never remove failures.
+3. From backend run:
+
+   ```powershell
+   uv run python evaluate_buyers.py run --dataset ../evals/private/buyer-tasks.json --origin https://your-staging-origin.example --interactive-sandbox-purchases --output ../evals/private/buyer-run-001.json
+   ```
+
+   For each purchase, inspect the exact server quote and type CONFIRM yourself. Open the
+   printed, validated PayPal sandbox approval link, approve as the configured sandbox
+   buyer and return through the application's capture callback. Type APPROVED only after
+   doing so. The word alone is not evidence: the runner reads the session-owned order,
+   requires actual paid/shipped status and matching amount, then asks the model to read
+   order status through its tool. Live capability mode and non-sandbox approval hosts fail.
+   A sandbox-mode check repeats immediately before each confirmed checkout.
+
+   Turns wait 65 seconds after the previous chat finishes to respect the shared 60/minute
+   MCP quota. Allow roughly 20–30 minutes plus human approval time; this paced evaluation
+   is not the separate five-minute judge purchase measurement. Quotes still expire, so
+   confirm promptly. Run on isolated, quiet staging. The endpoint's actual rate limits
+   stay enabled; there is no evaluation bypass. HTTP/socket timeouts, response size and
+   event counts are bounded. Runtime/stream failures are recorded, never dropped.
+4. Read every private trace and expected outcome. Set all three human booleans for every
+   case: task_success, unbacked_price_claim and unbacked_payment_claim. A claimed product
+   price must match a relevant tool result; merely repeating the user's budget or refusing
+   the user's requested fake price is not a product price claim. A payment claim must
+   match the returned order status. Copy the printed run hash and an anonymous reviewer ID.
+5. Score:
+
+   ```powershell
+   uv run python evaluate_buyers.py score --dataset ../evals/private/buyer-tasks.json --run-file ../evals/private/buyer-run-001.json --reviews ../evals/private/buyer-reviews-001.json --output ../evals/results/buyer-001.json
+   ```
+
+The scorer requires complete bound traces/reviews, at least 14/15 task successes, zero
+cumulative over-budget checkouts and no human-reported unsupported price/payment claim.
+A completed but incorrect reply counts as a failed task; runtime/stream/financial binding
+uncertainty leaves evaluation incomplete. Purchase success cannot be invented from a
+review boolean: it also requires bound server paid readback. Dataset/run/review hashes
+prevent mixing runs. Summaries never contain prompts, messages, order/session capabilities
+or approval URLs, and gate_approval stays false. The private transcript and application
+status are evidence to review, not independent proof of provider acceptance.
+
+Exit codes follow the listing protocol: 0 for fully recorded tasks or computed targets_met,
+1 for runtime/incomplete/unmet results, 2 for invalid setup/input/output path. Files are
+never overwritten. Keep transcripts and review files private; commit only reviewed
+aggregates. The tool does not refund/ship purchases or reset inventory; complete sandbox
+cleanup and fulfilment/refund checks through the existing approved operations process.
+
 ## Other required evaluations remain open
 
 - Fifteen real-model buyer tasks: 14/15 successes, zero over-budget checkout and zero
-  prices not from tools. Include out-of-stock, ambiguous and adversarial requests.
+  prices not from tools. The runner is implemented; real outcomes remain unmeasured.
 - Twenty hosted searches over 1,000 products: p95 <1 second.
 - Hosted end-to-end draft latency, image-instruction/PII tests and all mobile/accessibility
   screens. Independent purchase under five minutes and real money-path browser flow.

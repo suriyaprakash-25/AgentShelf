@@ -61,6 +61,8 @@ or payment approval. Buyer addresses must not enter a model or log.
 Listing quality, buyer task success and real latency metrics are pending.
 The [evaluation guide](evals/README.md) provides the real-photo listing runner, strict
 scoring and human-review templates. Its protocol tests are not quality results.
+The same guide provides the fifteen-task sandbox buyer runner, explicit human payment
+steps and grounded-price/payment review. Real buyer-task outcomes remain pending.
 
 ## Quality checks
 

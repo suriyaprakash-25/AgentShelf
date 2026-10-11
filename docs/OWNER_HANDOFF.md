@@ -149,3 +149,15 @@ The tool computes exact category/rating/claim and local-call p95 targets, reject
 missing/failed/unbound evidence, preserves old outputs and emits only aggregate public
 summaries. Protocol tests are synthetic and do not establish product quality or hosted
 latency. Real photographs, labels, ratings, staging measurements and approval are open.
+
+## Buyer evaluation preparation
+
+The fifteen-task runner and review protocol are ready. Follow evals/README.md after
+the receiving/approval spike and configured sandbox staging. Purchase cases retain
+human quote confirmation and PayPal approval; status must be paid and match the quote.
+Task/review/run hashes bind the records; missing/failed/uncertain evidence cannot pass.
+The runtime now completes confirmed streams with exactly one done event after lease
+cleanup. This is verified through actual local HTTP/MCP and PG17 with controlled
+providers, not a real payment. Price/payment grounding needs a human rater. Real buyer
+success, provider approval and independent purchase remain open. Allow evaluation pacing
+time and clean up sandbox purchases using the existing owned operations process.

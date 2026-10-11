@@ -191,3 +191,25 @@ Public summaries distinguish local model-call latency from hosted workflow laten
 and never grant gate approval. Templates remain invalid until actual photos, labels
 and ratings are entered. Private artifacts are ignored. Full quality, hosted latency,
 buyer task and review gate acceptance remain open; see evals/README.md.
+
+## Buyer evaluation and confirmed stream completion
+
+The preceding listing-tool revision b7263bc passed all five CI jobs:
+https://github.com/suriyaprakash-25/AgentShelf/actions/runs/38112163654.
+Implemented a sandbox-only fifteen-task HTTP/SSE runner and bound human-review scorer.
+Purchase cases require explicit quote confirmation, human PayPal sandbox approval and
+matching session-owned paid readback before model status review. The runner validates
+origins/approval hosts, repeats sandbox preflight before checkout, bounds response/event
+sizes, redacts exception text and paces turns without bypassing production rate limits.
+Task templates include stock/budget/ambiguity, quantities, destination and attacks.
+Review placeholders are invalid. Public summaries contain no prompts/capabilities and
+never grant gate approval. Pricing/payment claim grounding remains human-reviewed.
+
+Found and fixed confirmed chat returning without done. Both confirmation and model
+branches now reach the shared cleanup/completion path. The actual HTTP/MCP socket test
+checks exactly one done event and released lease after checkout. Local isolated PG17:
+48 focused tests passed in 12.73 seconds; full pre-pacing-test suite 236 passed in
+85.12 seconds without skips, including actual restore. The added pacing check and
+evaluation suites pass: 45 tests in 3.87 seconds. Latest full count/CI is separate evidence.
+No real model request, PayPal approval/payment or buyer-success evaluation was performed.
+Real fifteen-task results and all external acceptance gates remain open.

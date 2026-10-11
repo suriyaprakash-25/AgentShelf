@@ -87,10 +87,10 @@ def digest(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def read_json(path):
+def read_json(path, max_bytes=1024 * 1024):
     with Path(path).open("rb") as source:
-        raw = source.read(1024 * 1024 + 1)
-    if len(raw) > 1024 * 1024:
+        raw = source.read(max_bytes + 1)
+    if len(raw) > max_bytes:
         raise ValueError("EVAL_INPUT_TOO_LARGE")
     return json.loads(raw), digest(raw)
 

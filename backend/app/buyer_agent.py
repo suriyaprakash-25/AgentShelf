@@ -125,81 +125,87 @@ async def events(session_id, state, country, confirmation=None):
                     pending = None
                 else:
                     yield {"type": "error", "error": data["error"]}
-                return
-            discovered = await client.list_tools()
-            tools = []
-            for tool in discovered.tools:
-                if tool.name not in {"search_products", "get_quote", "get_order_status"}:
-                    continue
-                schema = copy.deepcopy(tool.input_schema)
-                schema.get("properties", {}).pop("session_id", None)
-                schema["required"] = [
-                    key for key in schema.get("required", []) if key != "session_id"
-                ]
-                tools.append(
-                    {
-                        "name": tool.name,
-                        "description": tool.description or "",
-                        "input_schema": schema,
-                    }
-                )
-            for _ in range(6):
-                blocks = await llm.buyer_turn(history, tools, state["budget"], country)
-                # Only text and tool_use blocks are persisted; no provider reasoning blocks.
-                blocks = [b for b in blocks if b.get("type") in {"text", "tool_use"}]
-                history.append({"role": "assistant", "content": blocks})
-                uses = [b for b in blocks if b["type"] == "tool_use"]
-                for block in blocks:
-                    if block["type"] == "text":
-                        yield {"type": "message", "text": block["text"]}
-                if not uses:
-                    safe_history = copy.deepcopy(history)
-                    break
-                if len(uses) > 4:
-                    raise DomainError("AGENT_LIMIT", "Try a simpler shopping request.")
-                results = []
-                for use in uses:
-                    name, args = use["name"], copy.deepcopy(use["input"])
-                    if name not in {"search_products", "get_quote", "get_order_status"}:
-                        data = DomainError(
-                            "CONFIRMATION_REQUIRED", "The human must confirm the displayed quote."
-                        ).payload()
-                    else:
-                        args.pop("session_id", None)
-                        if name != "search_products":
-                            args["session_id"] = str(session_id)
-                        if name in {"search_products", "get_quote"}:
-                            args["ship_to_country"] = country
-                        yield {
-                            "type": "tool_call",
-                            "name": name,
-                            "arguments": {k: v for k, v in args.items() if k != "session_id"},
-                        }
-                        result = await client.call_tool(name, args)
-                        data = result.structured_content
-                        if not isinstance(data, dict):
-                            raise DomainError(
-                                "MCP_UNAVAILABLE", "A tool result could not be read.", 503
-                            )
-                    yield {"type": "tool_result", "name": name, "result": data}
-                    if name == "get_quote" and "quote_id" in data and "error" not in data:
-                        review = await asyncio.to_thread(quote_review, session_id, data["quote_id"])
-                        pending = uuid.UUID(review["quote_id"])
-                        yield {"type": "quote", **review}
-                    results.append(
+            else:
+                discovered = await client.list_tools()
+                tools = []
+                for tool in discovered.tools:
+                    if tool.name not in {"search_products", "get_quote", "get_order_status"}:
+                        continue
+                    schema = copy.deepcopy(tool.input_schema)
+                    schema.get("properties", {}).pop("session_id", None)
+                    schema["required"] = [
+                        key for key in schema.get("required", []) if key != "session_id"
+                    ]
+                    tools.append(
                         {
-                            "type": "tool_result",
-                            "tool_use_id": use["id"],
-                            "content": json.dumps(model_data(data)),
+                            "name": tool.name,
+                            "description": tool.description or "",
+                            "input_schema": schema,
                         }
                     )
-                history.append({"role": "user", "content": results})
-                safe_history = copy.deepcopy(history)
-            else:
-                yield {
-                    "type": "error",
-                    "error": {"code": "AGENT_LIMIT", "message": "Try a simpler shopping request."},
-                }
+                for _ in range(6):
+                    blocks = await llm.buyer_turn(history, tools, state["budget"], country)
+                    # Only text and tool_use blocks are persisted; no provider reasoning blocks.
+                    blocks = [b for b in blocks if b.get("type") in {"text", "tool_use"}]
+                    history.append({"role": "assistant", "content": blocks})
+                    uses = [b for b in blocks if b["type"] == "tool_use"]
+                    for block in blocks:
+                        if block["type"] == "text":
+                            yield {"type": "message", "text": block["text"]}
+                    if not uses:
+                        safe_history = copy.deepcopy(history)
+                        break
+                    if len(uses) > 4:
+                        raise DomainError("AGENT_LIMIT", "Try a simpler shopping request.")
+                    results = []
+                    for use in uses:
+                        name, args = use["name"], copy.deepcopy(use["input"])
+                        if name not in {"search_products", "get_quote", "get_order_status"}:
+                            data = DomainError(
+                                "CONFIRMATION_REQUIRED",
+                                "The human must confirm the displayed quote.",
+                            ).payload()
+                        else:
+                            args.pop("session_id", None)
+                            if name != "search_products":
+                                args["session_id"] = str(session_id)
+                            if name in {"search_products", "get_quote"}:
+                                args["ship_to_country"] = country
+                            yield {
+                                "type": "tool_call",
+                                "name": name,
+                                "arguments": {k: v for k, v in args.items() if k != "session_id"},
+                            }
+                            result = await client.call_tool(name, args)
+                            data = result.structured_content
+                            if not isinstance(data, dict):
+                                raise DomainError(
+                                    "MCP_UNAVAILABLE", "A tool result could not be read.", 503
+                                )
+                        yield {"type": "tool_result", "name": name, "result": data}
+                        if name == "get_quote" and "quote_id" in data and "error" not in data:
+                            review = await asyncio.to_thread(
+                                quote_review, session_id, data["quote_id"]
+                            )
+                            pending = uuid.UUID(review["quote_id"])
+                            yield {"type": "quote", **review}
+                        results.append(
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": use["id"],
+                                "content": json.dumps(model_data(data)),
+                            }
+                        )
+                    history.append({"role": "user", "content": results})
+                    safe_history = copy.deepcopy(history)
+                else:
+                    yield {
+                        "type": "error",
+                        "error": {
+                            "code": "AGENT_LIMIT",
+                            "message": "Try a simpler shopping request.",
+                        },
+                    }
     except DomainError as exc:
         yield {"type": "error", **exc.payload()}
     except Exception:
