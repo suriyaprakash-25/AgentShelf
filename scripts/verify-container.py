@@ -25,18 +25,17 @@ def request(path, expected=200, data=None, headers=None):
     except urllib.error.HTTPError as exc:
         response = exc
     with response:
-        assert response.status == expected, (
-            f"Unexpected status for {path}: {response.status}"
-        )
+        assert response.status == expected, f"Unexpected status for {path}: {response.status}"
         content = response.read(2 * 1024 * 1024 + 1)
         assert len(content) <= 2 * 1024 * 1024, "Smoke response exceeds its bound"
         return content, response.headers
 
 
-for attempt in range(30):
+for _attempt in range(30):
     try:
-        content, _ = request("/healthz")
+        content, headers = request("/healthz")
         assert json.loads(content)["database"] == "reachable"
+        assert headers.get("Cache-Control") == "no-store"
         break
     except (OSError, AssertionError):
         time.sleep(1)

@@ -70,7 +70,7 @@ async def request_context(request, call_next):
         )
     if request.url.path.startswith("/assets/") and response.status_code == 200:
         response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-    elif any(
+    elif request.url.path == "/healthz" or any(
         request.url.path == prefix or request.url.path.startswith(prefix + "/")
         for prefix in ("/api/me", "/api/ops", "/api/auth")
     ):

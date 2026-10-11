@@ -345,6 +345,8 @@ monitoring configuration does not fetch this chunk; catalog use remains availabl
 It requires HTTP 200, status=ok, database=reachable and the expected PayPal mode.
 Redirects, malformed/oversized bodies, database failure and network timeouts fail.
 The response body, URL and exception text are excluded from its JSON report.
+/healthz sends Cache-Control: no-store for healthy and unavailable responses so
+intermediaries must not retain stale health state. The probe also requests no-cache.
 Calls have a ten-second socket timeout and an 8 KB response limit. No retry hides
 an outage. The workflow job has a two-minute overall execution limit.
 

@@ -154,3 +154,9 @@ when the owned isolated database was stopped. Lint and format checks pass.
 No staging address, hosted schedule or operator notification receipt is verified.
 The source external-uptime acceptance checkbox therefore remains open. The probe
 does not replace nightly provider tests, worker outage drills or real alert receipt.
+
+Health cache follow-up: /healthz now sets no-store for successful and failed responses.
+Two added backend tests check the SQL health query, outage response, cache headers
+and private-error exclusion (2 passed in 6.41 seconds). Container smoke now requires
+the health cache header on the packaged API. Full updated backend/packaged behavior
+is checked separately by the follow-up revision CI; the earlier 190 count is historical.
