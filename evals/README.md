@@ -168,6 +168,25 @@ hosted latency, concurrent load capacity, real-provider acceptance or a roadmap 
 
 ## Other required evaluations remain open
 
+The normal development and packaged browser suites now include axe-core WCAG 2.1
+A/AA scans with no excluded elements or disabled rules. Public screens are scanned at
+375 px: home, seeded store, playground, onboarding, signed-out dashboard/operations,
+receipt recovery and not-found. Controlled populated seller grids/fulfilment forms and
+operator screens are scanned at 1,280 and 375 px; controlled quote confirmation and
+listing review are also scanned. An independent keyboard check activates the skip link
+and verifies that main content receives focus. These controlled responses exist only in
+Playwright, not in production authentication or provider adapters.
+
+Reports retain both violations and incomplete checks under frontend/test-results;
+CI retains packaged accessibility reports for seven days, including successful scans.
+Review incomplete results manually. Zero automated violations is not full WCAG
+conformance, a Lighthouse score, screen-reader acceptance or proof that every state of
+every screen is accessible. Actual licensed Studio/provider/payment states and real
+content still require hosted and human checks. Use the roadmap's separate Lighthouse
+score >=90, 375 px layout and keyboard/screen-reader requirements as acceptance gates.
+Playwright's [accessibility guidance](https://playwright.dev/docs/accessibility-testing)
+also explains why automated scans require manual assessment.
+
 - Fifteen real-model buyer tasks: 14/15 successes, zero over-budget checkout and zero
   prices not from tools. The runner is implemented; real outcomes remain unmeasured.
 - Twenty hosted searches over 1,000 products: p95 <1 second.

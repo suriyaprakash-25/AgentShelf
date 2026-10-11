@@ -185,3 +185,9 @@ at least 1,000 enumerated products, expected result/price checks, catalog hash s
 and explicit SDK cache disablement. Use evals/README.md to run against quiet staging;
 retain separate database index/query-plan evidence. Local tests and tools do not replace
 the roadmap's hosted latency or human/provider acceptance gates.
+
+Local accessibility verification now runs axe scans in development and packaged browser
+suites, with retained reports and an actual keyboard skip-focus check. Public/mobile and
+controlled populated seller/operator plus quote/listing-review states are covered. Keep
+Lighthouse scores, manual screen-reader/keyboard assessment and real licensed/provider
+states as separate unaccepted release requirements.

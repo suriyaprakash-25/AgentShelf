@@ -7,7 +7,7 @@
   font-synthesis: none;
   font-weight: 400;
   --green: #172e28;
-  --muted: #69736a;
+  --muted: #5e685f;
   --line: #dedfd5;
   --accent: #d5ec84;
 }
@@ -42,7 +42,10 @@ button:disabled {
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
-select:focus-visible {
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+main:focus-visible {
   outline: 3px solid #698521;
   outline-offset: 4px;
 }
@@ -169,7 +172,7 @@ h1 {
 }
 h1 em {
   font-style: normal;
-  color: #879d43;
+  color: #70852f;
 }
 h2 {
   font-size: 34px;
@@ -223,7 +226,7 @@ h3 {
   top: 26px;
   font-size: 8px;
   letter-spacing: 2px;
-  color: #697563;
+  color: #596550;
 }
 .fabric {
   position: absolute;
@@ -343,7 +346,7 @@ h3 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: #7a8c55;
+  color: #5d703d;
   font-size: 11px;
 }
 .step-top svg {

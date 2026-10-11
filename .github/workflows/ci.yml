@@ -126,6 +126,13 @@ jobs:
           name: browser-failure-traces
           path: frontend/test-results/
           retention-days: 7
+      - name: Retain accessibility scan evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: accessibility-reports
+          path: frontend/test-results/*/accessibility-*.json
+          retention-days: 7
   secrets:
     runs-on: ubuntu-latest
     steps:

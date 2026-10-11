@@ -233,3 +233,23 @@ passed 256 tests in 90.69 seconds, with no skips. The subsequent explicit cache-
 and scan-deadline changes have separate focused verification. Invalid template CLI
 rejected input and wrote no result. Source PDF hash remains unchanged. Hosted twenty
 searches, provider acceptance, licences, policies and Gates 1/2/3 remain unaccepted.
+
+## Accessibility checks and corrections
+
+Added locked axe-core Playwright scans for WCAG 2.1 A/AA with no disabled rules or
+excluded elements. Eight public screens are scanned at 375 px; controlled populated
+seller grids/fulfilment forms and operator screens at 1,280/375 px; quote-confirmation
+and listing-review states are scanned inside their existing interaction tests. Scans
+retain violations and incomplete/manual-review findings. CI retains packaged JSON
+reports for seven days, including success. Tests keep provider/authentication fixtures
+isolated in the browser; production permissions and adapters remain real.
+
+Found and corrected home heading/illustration-note/step-number and playground notice
+contrast. Darkened muted text, made main focusable for the keyboard skip link and
+extended visible focus to textarea, summary and main. Actual keyboard activation now
+checks focus reaches main. Development suite: 16 passed in 24.3 seconds. Packaged
+unlicensed build: 15 passed in 24.2 seconds. Fourteen packaged scans had zero automated
+violations; complex illustration and AG Grid header contrast retain incomplete checks.
+These findings require manual review, not a claimed conformance result. Lint, Prettier,
+TypeScript/Vite build and npm audit pass with zero reported vulnerabilities. Lighthouse
+scores, real licensed/provider states and human screen-reader assessment remain open.

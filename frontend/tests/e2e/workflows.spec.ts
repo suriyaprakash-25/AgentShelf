@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { scanAccessibility } from "../accessibility";
 
 test("controlled AI stream requires human quote confirmation before checkout", async ({
   page,
-}) => {
+}, info) => {
   let checkouts = 0;
   await page.route("**/api/capabilities", (route) =>
     route.fulfill({
@@ -67,6 +68,7 @@ test("controlled AI stream requires human quote confirmation before checkout", a
   ).toBeVisible();
   await page.setViewportSize({ width: 375, height: 812 });
   await page.getByText("MCP tool activity (2)").click();
+  await scanAccessibility(page, info);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -87,7 +89,7 @@ test("controlled AI stream requires human quote confirmation before checkout", a
 
 test("controlled listing review uses seller price and explicit publication", async ({
   page,
-}) => {
+}, info) => {
   let published: Record<string, unknown> | null = null;
   await page.route("**/api/me", (route) =>
     route.fulfill({
@@ -153,6 +155,7 @@ test("controlled listing review uses seller price and explicit publication", asy
     page.getByText("Suggested price: $45.00 USD.", { exact: false }),
   ).toBeVisible();
   expect(published).toBeNull();
+  await scanAccessibility(page, info);
   await page.getByLabel("Your selling price in USD").fill("39.00");
   await page.getByLabel("Available stock", { exact: true }).first().fill("2");
   await page

@@ -67,7 +67,7 @@ export default function App() {
           Start your shop <ArrowRight size={16} />
         </Link>
       </header>
-      <main id="main">
+      <main id="main" tabIndex={-1}>
         <Suspense
           fallback={
             <div className="page" role="status">

@@ -23,6 +23,7 @@ Source roadmap acceptance and independent release gates remain separate.
 - [x] Privacy-filtered API/worker Sentry and actual browser SDK, recovery screen, request logging and expired auth/chat cleanup.
 - [x] Actual local backup/restore drill and guarded synthetic sandbox reset.
 - [x] Local 1,000-product search/pagination check and completed browser runner.
+- [x] Axe WCAG 2.1 A/AA browser scans for public/mobile screens and controlled populated seller/operator, quote and listing-review states; contrast and keyboard skip-focus fixes. Lighthouse/manual acceptance remains open.
 - [x] Twenty-search actual MCP latency evaluator with catalog count/hash stability and expected ID/price checks; hosted latency and index acceptance remain open.
 - [x] Actual AG Studio custom widget/theme and framework analyst, locally browser tested.
 - [x] Unlicensed production omits Studio entirely and avoids analytics calls; development component still verified. Render licence build variable is documented.
