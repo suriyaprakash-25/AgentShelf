@@ -1,0 +1,24 @@
+{
+  "searches": [
+    {"query": "scarf", "expected_ids": []},
+    {"query": "silver jewellery", "expected_ids": []},
+    {"query": "cotton textile", "expected_ids": []},
+    {"query": "wood craft", "expected_ids": []},
+    {"query": "art print", "expected_ids": []},
+    {"query": "scarf", "expected_ids": []},
+    {"query": "silver jewellery", "expected_ids": []},
+    {"query": "cotton textile", "expected_ids": []},
+    {"query": "wood craft", "expected_ids": []},
+    {"query": "art print", "expected_ids": []},
+    {"query": "scarf", "expected_ids": []},
+    {"query": "silver jewellery", "expected_ids": []},
+    {"query": "cotton textile", "expected_ids": []},
+    {"query": "wood craft", "expected_ids": []},
+    {"query": "art print", "expected_ids": []},
+    {"query": "scarf", "expected_ids": []},
+    {"query": "silver jewellery", "expected_ids": []},
+    {"query": "cotton textile", "expected_ids": []},
+    {"query": "wood craft", "expected_ids": []},
+    {"query": "art print", "expected_ids": []}
+  ]
+}

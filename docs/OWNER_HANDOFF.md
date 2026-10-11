@@ -87,6 +87,8 @@ bounded first page; use R2 continuation tokens for a complete production invento
    1,000-product search p95 below 1 s, all-screen accessibility at least 90 and hosted
    LCP below 2.5 s. Have an independent judge complete a real sandbox purchase under
    five minutes. Record the exact provider/model, dataset and timing evidence.
+   Use evaluate_search.py and the evaluation guide for twenty actual MCP measurements;
+   retain separate database-index evidence. Local results do not approve hosted latency.
 6. **Approve staged gates and pilot.** Complete all 12 Must criteria and 14 stories,
    obtain Gate 1/2 review, then implement/accept the source's Should items in order.
    Prepare judge credentials, public links, walkthrough and submission; obtain Gate 3.

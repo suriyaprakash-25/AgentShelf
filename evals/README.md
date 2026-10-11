@@ -120,6 +120,52 @@ never overwritten. Keep transcripts and review files private; commit only review
 aggregates. The tool does not refund/ship purchases or reset inventory; complete sandbox
 cleanup and fulfilment/refund checks through the existing approved operations process.
 
+## Twenty-search MCP latency evaluation
+
+`backend/evaluate_search.py` measures actual `search_products` calls through the MCP
+SDK and deployed HTTP transport. It makes no model calls, checkout or catalog writes.
+Before and after timing it enumerates `/api/products` with normal cursor pagination:
+at least 1,000 searchable products, at most 10,000, no duplicates or cursor loops.
+Complete public-record hashes must match across both snapshots. This detects changes
+visible at those snapshots; isolate the catalog from writes during the run. It is not
+a transactional snapshot and cannot prove that a product never changed temporarily.
+
+1. Seed an isolated evaluation database with at least 1,000 eligible live, in-stock
+   products owned by consenting active sellers. Apply migrations, including the GIN
+   full-text index. Verify the index and query plan separately using database access;
+   the public evaluator cannot prove index installation or use.
+2. Copy `templates/search-tasks.example.json` to ignored `private/search-tasks.json`.
+   Fill all twenty cases with queries and the exact ordered expected product UUIDs
+   (1–10 per case) from the frozen seeded manifest. Use at least five distinct queries,
+   covering representative selective and broad searches. Empty placeholders are invalid.
+   Establish expected matches independently of the timed run, rather than accepting
+   whatever the endpoint happens to return. This protocol measures successful searches;
+   separate correctness tests cover empty results and invalid inputs.
+3. From `backend`, run against quiet HTTPS staging:
+
+   ```powershell
+   uv run python evaluate_search.py --origin https://YOUR-STAGING-HOST --dataset ../evals/private/search-tasks.json --output ../evals/results/search-001.json
+   ```
+
+   Explicit `--allow-loopback` permits local HTTP for engineering verification. Origins
+   cannot contain credentials, paths, queries or fragments. Catalog HTTP redirects are
+   disabled. Catalog scans have a two-minute deadline checked between requests, each
+   HTTP request a ten-second socket timeout. Each tool call is bounded to ten seconds;
+   the MCP lifecycle to four minutes.
+   Twenty calls stay within the existing quota on an otherwise quiet endpoint. Rate
+   limits remain enabled; a failure leaves evaluation incomplete, with no success report.
+4. Review the report and retain dataset/catalog hashes with deployment and index evidence.
+   The nearest-rank p95 is the nineteenth sorted sample and must be strictly below 1 s.
+   Timing includes the MCP tool request, transport and database work, excludes initial
+   MCP connection setup, catalog enumeration and local correctness validation. No warmup
+   searches are discarded. SDK response caching is explicitly disabled so repeated
+   queries still reach the endpoint. Reports contain durations, hashes and counts, no product
+   records, queries or endpoint URL. Existing files cannot be overwritten. Exit codes:
+   0 target met, 1 measured target unmet, 2 invalid/incomplete run.
+
+`gate_approval` and `postgres_index_verified` remain false. A local result does not establish
+hosted latency, concurrent load capacity, real-provider acceptance or a roadmap gate.
+
 ## Other required evaluations remain open
 
 - Fifteen real-model buyer tasks: 14/15 successes, zero over-budget checkout and zero

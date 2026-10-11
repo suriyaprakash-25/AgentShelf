@@ -179,3 +179,9 @@ See STATUS.md for exact test evidence and remaining gates. Configuration does no
 establish provider acceptance. Reservation release currently requires PayPal VOIDED
 proof; resolve the difference from the source 15-minute policy before Gate 2.
 The deployed frontend and API must share one HTTPS origin to preserve secure sessions.
+
+The October 11 evaluation tooling now includes twenty actual MCP search timings with
+at least 1,000 enumerated products, expected result/price checks, catalog hash stability
+and explicit SDK cache disablement. Use evals/README.md to run against quiet staging;
+retain separate database index/query-plan evidence. Local tests and tools do not replace
+the roadmap's hosted latency or human/provider acceptance gates.

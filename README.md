@@ -63,6 +63,8 @@ The [evaluation guide](evals/README.md) provides the real-photo listing runner, 
 scoring and human-review templates. Its protocol tests are not quality results.
 The same guide provides the fifteen-task sandbox buyer runner, explicit human payment
 steps and grounded-price/payment review. Real buyer-task outcomes remain pending.
+It also provides a twenty-search MCP latency evaluator that verifies a stable catalog
+of at least 1,000 products and expected IDs/prices. Hosted results remain pending.
 
 ## Quality checks
 

@@ -213,3 +213,23 @@ checks exactly one done event and released lease after checkout. Local isolated 
 evaluation suites pass: 45 tests in 3.87 seconds. Latest full count/CI is separate evidence.
 No real model request, PayPal approval/payment or buyer-success evaluation was performed.
 Real fifteen-task results and all external acceptance gates remain open.
+
+## Twenty-search transport evaluation
+
+Added a read-only actual MCP SDK/HTTP evaluator for twenty searches over at least
+1,000 searchable products. Bounded public cursor enumeration binds complete catalog
+records before/after; expected ordered IDs and server prices must match. At least five
+distinct queries are required. No sample or failure is discarded, SDK caching is
+disabled, and nearest-rank p95 must be strictly below one second. Invalid templates,
+catalog changes and transport failures cannot produce successful evidence. Aggregates
+exclude records/queries/host URLs; index verification and gate approval remain false.
+The evaluator measures round trips, excluding connection setup and enumeration. Local
+measurement cannot establish hosted latency, concurrent load, transactional catalog
+stability or installed/used full-text index. See evals/README.md for these limitations.
+
+Nineteen controlled protocol tests pass in 4.56 seconds. Actual loopback MCP/socket and
+isolated PostgreSQL 17 evaluation with 1,001 products passed; full native backend suite
+passed 256 tests in 90.69 seconds, with no skips. The subsequent explicit cache-disable
+and scan-deadline changes have separate focused verification. Invalid template CLI
+rejected input and wrote no result. Source PDF hash remains unchanged. Hosted twenty
+searches, provider acceptance, licences, policies and Gates 1/2/3 remain unaccepted.
