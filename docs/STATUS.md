@@ -12,11 +12,11 @@ they must not be read as a current implementation assessment.
 
 | Check | Result | Evidence boundary |
 | --- | --- | --- |
-| Full backend suite | 182 passed, 145.06 seconds | Python 3.12, isolated local PostgreSQL 17; external services controlled in tests |
+| Full backend suite | 190 passed, 103.45 seconds | Python 3.12, isolated local PostgreSQL 17; external services controlled in tests |
 | Alembic upgrade/downgrade/upgrade and schema drift | Passed | Dedicated local migration database |
 | Dependency audit | No known backend/frontend vulnerabilities | Installed dependency snapshot |
 | Frontend lint, format and production build | Passed after AG Studio integration | No staging performance claim |
-| Browser suite | Eight tests passed, 26.8 seconds | Actual API catalog/mobile plus controlled listing/SSE/Studio/operator recovery fixtures |
+| Browser suite | Eleven tests passed, 14.4 seconds | Actual API catalog/mobile plus controlled listing/SSE/Studio/operator recovery and actual browser SDK fixtures |
 | PostgreSQL 17 container payment/worker checks | 24 passed, 11.65 seconds | Orders, capture, webhooks, jobs and reconciliation; controlled providers |
 | Docker build/runtime | Built; UID 10001, PG17 migrations/no drift, DB health, six products and frontend/security headers | Isolated local container; no hosted deployment |
 | Backup and restore | Actual dump restored catalog stock, session budget and quote amount | Separate random empty loopback test DB; no managed-provider backup proof |
@@ -111,3 +111,18 @@ The full 182-test suite passes without skips, including real dump/restore to a s
 random drill database. Old native Postgres was not running; verification used a fresh
 isolated Docker PostgreSQL 17 instance with separate test/demo databases.
 Original database files were not modified. The source PDF hash remains unchanged.
+
+
+## Browser monitoring phase
+
+Implemented optional browser Sentry SDK 11.6.0 with runtime public DSN configuration,
+exact ingestion-origin CSP, disabled default integrations/data collection, fixed-code
+payload allowlist, attachment removal and bounded deduplication. The SDK chunk loads
+only when enabled. React failures show a usable reload screen and avoid raw React
+error logging through root callbacks. Eight backend config/CSP/privacy cases and
+three actual-SDK browser transport/recovery/privacy cases pass. Full suites: 190
+backend tests (including actual PostgreSQL 17 restore) and 11 browser tests. SDK
+transport is intercepted in browser tests; real Sentry receipt/alerts remain open.
+Frontend dependencies were reinstalled as an ordinary local node_modules directory;
+the earlier E: junction is no longer the active dependency path. Preserved E: files
+remain untouched. Source roadmap/PDF remain unchanged.

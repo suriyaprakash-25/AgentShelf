@@ -1,9 +1,11 @@
 """Validated runtime configuration, with explicit integration readiness."""
 
+import re
 from functools import lru_cache
 from typing import Literal
+from urllib.parse import urlsplit
 
-from pydantic import SecretStr, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -34,12 +36,15 @@ class Settings(BaseSettings):
     r2_access_key_id: SecretStr | None = None
     r2_secret_access_key: SecretStr | None = None
     sentry_dsn: SecretStr | None = None
+    browser_sentry_dsn: str | None = Field(default=None, max_length=2048)
     whatsapp_paid_template: str | None = None
     whatsapp_template_language: str = "en_US"
 
     @model_validator(mode="after")
     def validate_environment(self):
         """Reject unsafe or incomplete deployed configurations."""
+        if self.browser_sentry_dsn:
+            parse_browser_sentry_dsn(self.browser_sentry_dsn)
         if not self.database_url.startswith("postgresql+psycopg://"):
             raise ValueError("DATABASE_URL must use postgresql+psycopg://")
         if self.paypal_mode == "live" and (
@@ -65,6 +70,28 @@ class Settings(BaseSettings):
                     "Deployed payment service requires PayPal credentials and webhook ID"
                 )
         return self
+
+
+def parse_browser_sentry_dsn(dsn):
+    """Validate an intentionally public browser DSN and return its exact HTTPS origin."""
+    try:
+        parsed = urlsplit(dsn)
+        valid = (
+            parsed.scheme == "https"
+            and parsed.hostname
+            and re.fullmatch(r"[A-Za-z0-9.-]+", parsed.hostname)
+            and re.fullmatch(r"[a-fA-F0-9]{32}", parsed.username or "")
+            and parsed.password is None
+            and parsed.port in (None, 443)
+            and re.fullmatch(r"/[0-9]+", parsed.path)
+            and not parsed.query
+            and not parsed.fragment
+        )
+        if valid:
+            return "https://" + parsed.hostname + (":443" if parsed.port else "")
+    except ValueError:
+        pass
+    raise ValueError("BROWSER_SENTRY_DSN requires a public-key-only HTTPS project DSN")
 
 
 @lru_cache

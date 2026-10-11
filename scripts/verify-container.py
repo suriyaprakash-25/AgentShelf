@@ -42,6 +42,9 @@ for attempt in range(30):
         time.sleep(1)
 else:
     raise RuntimeError("Container readiness timed out")
+content, headers = request("/api/monitoring-config")
+assert json.loads(content) == {"dsn": None, "environment": "test"}
+assert headers.get("Cache-Control") == "no-store"
 content, _ = request("/api/stores/meera-jaipur")
 assert len(json.loads(content)["products"]) == 6
 content, headers = request("/dashboard")

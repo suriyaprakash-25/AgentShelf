@@ -292,3 +292,32 @@ The October 10 incident above is historical; a factory reset or broad data delet
 was not required. The newly verified image has gzip/immutable static assets, no-store
 private routes, fresh worker heartbeat and no migration drift. Hosted provider and
 managed backup acceptance remain open.
+
+
+## Browser error monitoring
+
+Set optional BROWSER_SENTRY_DSN on the web API to a public-key-only HTTPS Sentry
+project DSN. This is intentionally returned to browsers at /api/monitoring-config;
+never put an auth token, password, PayPal secret or private DSN there. Configuration
+rejects passwords, query/fragment data and unexpected ports. SENTRY_DSN remains the
+separate API/worker setting. Prefer separate Sentry projects for browser and backend.
+No frontend rebuild is needed for browser DSN changes; restart the API and reload.
+The API CSP allows only the configured ingestion origin in addition to self.
+
+The actual @sentry/browser SDK is pinned to 11.6.0 and imported only when configured.
+Default integrations, tracing, client reports, breadcrumbs and data collection are
+turned off. Only three fixed codes are reported: UI_RENDER_FAILURE,
+BROWSER_RUNTIME_ERROR and BROWSER_UNHANDLED_REJECTION. Event filtering replaces the
+payload and clears attachments. Error text, component stacks, page URLs, user fields,
+forms, chat, buyer addresses and provider payloads are excluded. Deduplication permits
+one event per code per minute and at most ten events per page lifetime. The provider
+still receives ordinary network connection metadata; cover monitoring in your approved
+privacy policy and configure project quotas/alerts. No session replay is enabled.
+
+React rendering failures show a reload screen with payment-recovery guidance. Root
+error callbacks avoid React's default raw-error console logging. Missing configuration
+or monitoring outages preserve application use. Browser tests use the real SDK with
+intercepted transport; they prove payload filtering, deduplication and UI recovery,
+not receipt by a real Sentry account. On staging, reproduce a reviewed error, confirm
+its fixed-code event in the intended project and test actual alert receipt. Do not
+add a public crash endpoint or publish a login/address screenshot as evidence.

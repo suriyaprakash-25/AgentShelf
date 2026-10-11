@@ -20,7 +20,7 @@ Source roadmap acceptance and independent release gates remain separate.
 - [x] Paid-notification adapter gated by verified capture event; utility-template support.
 - [x] Verified refund accounting and visible dispute/reversal review states.
 - [x] Role-protected operations UI, audited failure retry and worker heartbeats.
-- [x] Privacy-filtered Sentry adapter and request logging; expired auth/chat cleanup.
+- [x] Privacy-filtered API/worker Sentry and actual browser SDK, recovery screen, request logging and expired auth/chat cleanup.
 - [x] Actual local backup/restore drill and guarded synthetic sandbox reset.
 - [x] Local 1,000-product search/pagination check and completed browser runner.
 - [x] Actual AG Studio custom widget/theme and framework analyst, locally browser tested.
@@ -28,7 +28,7 @@ Source roadmap acceptance and independent release gates remain separate.
 - [x] API/worker/private-storage blueprint authored.
 
 - [x] Bounded JSON/MCP bodies, verified lost-order correlation and auditable dry-run retention tools.
-- [x] October 11 full local suite: 182 backend tests, 8 browser tests, PostgreSQL 17 restore and no migration drift.
+- [x] October 11 full local suite: 190 backend tests, 11 browser tests, PostgreSQL 17 restore and no migration drift.
 - [x] Operator confirmation/error/retry/denial/mobile browser checks and retention/R2 regression cases.
 - [x] Recovered local Docker: fresh image, non-root API, worker heartbeat, gzip/cache/auth smoke checks.
 - [x] Local mobile storefront: performance 91, accessibility 100, LCP 2.0 seconds.

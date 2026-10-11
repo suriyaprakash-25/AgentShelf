@@ -25,9 +25,9 @@ real provider tests, deployed measurements and merchant decisions are still requ
   asset caching, private screen no-store headers, lazy page loading and corrected headings.
 - Strengthened CI with isolated packaged API/worker smoke checks and mandatory CI
   PostgreSQL backup clients; added compose.verify.yaml and a sanitized smoke report tool.
-- Full backend suite: **182 passed in 145.06 seconds**, including actual local native
+- Full backend suite: **190 passed in 103.45 seconds**, including actual local native
   PostgreSQL 17 backup and restore; no skipped tests in the final run.
-- Browser suite: **8 passed in 26.8 seconds**: real seeded catalog/quote/mobile layout
+- Browser suite: **11 passed in 14.4 seconds**: real seeded catalog/quote/mobile layout
   and controlled AI, listing and actual AG Studio flows. Real checkout is not covered.
 - Frontend build, lint and formatting passed. Dependency audits found no known
   vulnerabilities at audit time. Ruff passed. The migrated application database
@@ -49,7 +49,7 @@ real provider tests, deployed measurements and merchant decisions are still requ
 Docker Desktop and disk availability recovered on October 11. The local rebuild and
 isolated PostgreSQL 17 packaged API/worker verification now pass. The previous native
 Postgres was stopped; tests used fresh, separate demo/test databases. Original database
-files were untouched. Generated frontend dependencies remain on E: through a junction.
+files were untouched. Frontend dependencies were reinstalled locally; the earlier E: junction is no longer active. Preserved E: files remain untouched.
 This container evidence does not establish funded deployment or provider acceptance.
 
 Seller and optional AG Studio chunks remain large (approximately 1.01 MB and 4.36 MB
@@ -96,3 +96,15 @@ Use DELIVERY_CHECKLIST.md to track acceptance and RUNBOOK.md for execution. Thes
 concrete remaining tasks, not a claim that adding credentials automatically completes
 production readiness. I can perform further engineering and staged verification once
 account access and the required policy decisions are available.
+
+
+## Browser monitoring addition
+
+Optional BROWSER_SENTRY_DSN enables the actual pinned browser SDK at runtime. Its
+public DSN is validated and its exact ingestion origin is allowed by CSP. Default
+instrumentation, breadcrumbs, tracing and personal-data collection are disabled.
+Fixed error codes are deduplicated and event payloads/attachments are filtered;
+React rendering failures have a reload screen with existing-order guidance.
+Actual-SDK browser tests intercept transport and pass; account receipt and alert
+routing still require owner-provided Sentry configuration and staged evidence.
+Use the browser monitoring section of RUNBOOK.md for setup and acceptance.

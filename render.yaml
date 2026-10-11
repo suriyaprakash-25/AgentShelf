@@ -31,6 +31,8 @@ services:
         sync: false
       - key: SENTRY_DSN
         sync: false
+      - key: BROWSER_SENTRY_DSN
+        sync: false
       - key: WHATSAPP_PAID_TEMPLATE
         sync: false
       - key: MEDIA_BACKEND

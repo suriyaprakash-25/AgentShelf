@@ -21,7 +21,7 @@ from starlette.middleware.gzip import GZipMiddleware
 
 from app import observability, orders, quotes, rate_limits
 from app.body_limits import BodySizeLimitMiddleware
-from app.config import get_settings
+from app.config import get_settings, parse_browser_sentry_dsn
 from app.db import get_engine, session_factory
 from app.errors import DomainError
 from app.mcp_server import create_mcp_server
@@ -78,10 +78,16 @@ async def request_context(request, call_next):
     response.headers["X-Request-ID"] = request_id
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "no-referrer"
+    monitoring_origin = (
+        " " + parse_browser_sentry_dsn(settings.browser_sentry_dsn)
+        if settings.browser_sentry_dsn
+        else ""
+    )
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
         "font-src 'self'; "
-        "img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; "
+        f"img-src 'self' data: https:; connect-src 'self'{monitoring_origin}; "
+        "frame-ancestors 'none'; "
         "base-uri 'self'; form-action 'self'"
     )
     logger.info(
@@ -119,6 +125,15 @@ def healthz():
         return {"status": "ok", "database": "reachable", "paypal_mode": settings.paypal_mode}
     except SQLAlchemyError:
         return JSONResponse({"status": "unavailable", "database": "unreachable"}, status_code=503)
+
+
+@router.get("/api/monitoring-config")
+def monitoring_config():
+    """Expose only the opt-in public browser DSN, never server/provider secrets."""
+    return JSONResponse(
+        {"dsn": settings.browser_sentry_dsn, "environment": settings.app_env},
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @router.get("/api/capabilities")
