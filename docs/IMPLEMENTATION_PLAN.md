@@ -191,3 +191,9 @@ suites, with retained reports and an actual keyboard skip-focus check. Public/mo
 controlled populated seller/operator plus quote/listing-review states are covered. Keep
 Lighthouse scores, manual screen-reader/keyboard assessment and real licensed/provider
 states as separate unaccepted release requirements.
+
+Listing quality scoring now requires the source success metric's two teammates, each
+reviewing all twenty products from the same run. Keep both anonymous review IDs and
+hashes, combined forty-rating average and per-reviewer averages. Either person's
+invented-claim flag prevents a pass. Actual human identity/review independence and
+real photograph/model quality remain owner evidence, not protocol-test conclusions.

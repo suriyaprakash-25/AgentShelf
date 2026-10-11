@@ -28,32 +28,41 @@ Finish the roadmap's five-photo provider/model spike before the full evaluation.
    Missing credentials fail explicitly. Individual failures are recorded for every case
    and cannot be excluded from scoring. Each product includes one to four images;
    repeated processed images are rejected. Nothing is published or priced for sale.
-3. Copy `templates/listing-reviews.example.json` into the private directory. Set
-   run_sha256 to the hash printed by the runner and reviewer_id to an anonymous team
-   identifier. A human reviews all 20 originals, hand labels and drafts. Fill every
+3. Make two private copies of `templates/listing-reviews.example.json`, one for each
+   of the roadmap's two teammates. Set run_sha256 to the same hash printed by the runner
+   and reviewer_id to each person's distinct anonymous team identifier. Each human
+   independently reviews all 20 originals, hand labels and drafts. Fill every
    rating with an integer 1–5 and invented_claim with an explicit boolean. Check brands,
    certifications, materials, provenance and every unsupported claim. Null placeholders
    never count as a passing review. Do not use a model as the human rater.
 4. Score from `backend`:
 
    ```powershell
-   uv run python evaluate_listings.py score --dataset ../evals/private/dataset.json --run-file ../evals/private/run-001.json --reviews ../evals/private/reviews-001.json --output ../evals/results/listing-001.json
+   uv run python evaluate_listings.py score --dataset ../evals/private/dataset.json --run-file ../evals/private/run-001.json --reviews ../evals/private/reviews-001-a.json --reviews ../evals/private/reviews-001-b.json --output ../evals/results/listing-001.json
    ```
 
-The summary requires 18/20 correct categories, average human rating >=4/5, zero
+The summary requires 18/20 correct categories, average human rating >=4/5 across
+all 40 ratings (two complete 20-product reviews of the same run), zero
 invented claims and local draft-call p95 <20 seconds. Nearest-rank p95 uses the 19th
 of 20 sorted observations, compares the unrounded value and includes schema/provider
 retries. It excludes hosted queue/storage/upload time. Measure the separate hosted
 photo-to-draft workflow for staging latency acceptance; this benchmark cannot prove it.
 Ground-truth changes, missing/duplicate records, provider failures or unbound reviews
 produce incomplete. Complete results below a target produce targets_not_met.
+One review, duplicate reviewer identifiers, or an incomplete/unbound second panel cannot
+pass. Either reviewer flagging an invented claim prevents a pass; products flagged by
+both are counted once. Per-reviewer averages and canonical review hashes remain visible
+alongside the combined average. Distinct IDs are an owner declaration, not proof of
+human identity or independent judgement. Teammates must actually conduct both reviews.
+Old one-review scoring commands must add the second `--reviews` argument; old summaries
+are not evidence for the two-teammate criterion.
 
 Exit 0 means recorded successful drafts or computed targets_met, exit 1 means failed
 cases/incomplete/unmet targets, exit 2 means invalid input/provider setup/output path.
 Previous artifacts are never overwritten. Use a new numbered filename for each run.
 Private artifacts contain untrusted model text and photographs; keep them in ignored
 evals/private. Only reviewed aggregate summaries belong in evals/results. Summaries
-contain hashes, anonymous reviewer ID and metrics, never captions, photo paths or draft
+contain hashes, both anonymous reviewer IDs and metrics, never captions, photo paths or draft
 text. Preserve private source evidence securely for independent review. A file's source
 declaration and human scores are owner-supplied evidence, not independent verification.
 

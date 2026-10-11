@@ -29,7 +29,7 @@ Source roadmap acceptance and independent release gates remain separate.
 - [x] Unlicensed production omits Studio entirely and avoids analytics calls; development component still verified. Render licence build variable is documented.
 - [x] Same-origin deployment container built; non-root runtime/migrations/catalog/UI checked with PostgreSQL 17.
 - [x] API/worker/private-storage blueprint authored.
-- [x] Listing evaluation runner/scorer and blank dataset/review templates; 20 protocol tests pass. Real quality/latency evaluation remains pending.
+- [x] Listing evaluation runner/scorer and blank dataset/review templates; two distinct complete human review panels required. Real quality/latency evaluation remains pending.
 - [x] Fifteen-task sandbox buyer runner/scorer with human payment steps and task/review templates; controlled protocol tests pass. Real task success remains pending.
 - [x] Confirmed checkout SSE now emits done after session cleanup; actual HTTP/MCP/PG17 regression verified.
 - [x] External API/database uptime probe, sanitized failure evidence, inactive scheduled workflow and 14 operations tests; local database outage detected.

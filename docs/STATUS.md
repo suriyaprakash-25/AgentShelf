@@ -253,3 +253,21 @@ violations; complex illustration and AG Grid header contrast retain incomplete c
 These findings require manual review, not a claimed conformance result. Lint, Prettier,
 TypeScript/Vite build and npm audit pass with zero reported vulnerabilities. Lighthouse
 scores, real licensed/provider states and human screen-reader assessment remain open.
+
+## Two-teammate listing quality review
+
+The source success metric explicitly requires two teammates to rate all twenty products;
+the previous scorer accepted one. Scoring now requires two complete panels with distinct
+anonymous reviewer IDs and the same run hash. Missing/duplicate/unbound second records
+leave evaluation incomplete. CLI requires exactly two repeated --reviews arguments.
+All forty ratings contribute to the average >=4/5; summaries retain individual averages
+and canonical review hashes. An invented claim flagged by either reviewer prevents a
+pass, with each flagged product counted once. Categories and nearest-rank latency retain
+the source thresholds. Legacy one-review summaries cannot satisfy the two-person metric.
+
+Local isolated PostgreSQL 17 full suite: 265 passed in 95.88 seconds, with zero skips,
+failures or errors. Targeted listing/buyer/search protocol suites: 73 passed in 7.55
+seconds, including twenty-nine listing tests and the actual CLI/hash binding. Ruff lint
+and format pass; source PDF hash unchanged. No real photographs, model request or human
+quality evaluation was performed. Distinct IDs do not independently prove human identity
+or independent judgement. Provider, staging and roadmap gate acceptance remain open.

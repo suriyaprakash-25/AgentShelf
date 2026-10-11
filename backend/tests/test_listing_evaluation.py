@@ -60,7 +60,9 @@ def fixtures():
         reviewer_id="anonymous-test",
         reviews=[{"id": case.id, "rating": 4, "invented_claim": False} for case in dataset.cases],
     )
-    return dataset, dataset_hash, run, run_hash, reviews
+    second_reviews = reviews.model_copy(deep=True)
+    second_reviews.reviewer_id = "anonymous-second-test"
+    return dataset, dataset_hash, run, run_hash, reviews, second_reviews
 
 
 def test_complete_protocol_computes_targets_without_gate_approval():
@@ -69,14 +71,53 @@ def test_complete_protocol_computes_targets_without_gate_approval():
     assert report["gate_approval"] is False
     assert report["metrics"]["category_correct"] == 20
     assert report["metrics"]["human_rating_average"] == 4
+    assert report["metrics"]["human_reviews"] == 40
+    assert len(report["reviewer_summaries"]) == 2
     assert "Controlled fixture" not in json.dumps(report)
+
+
+def test_single_review_cannot_pass_legacy_scorer_call():
+    assert evaluation.score(*fixtures()[:-1])["decision"] == "incomplete"
+
+
+@pytest.mark.parametrize(
+    "mutation", ["same_reviewer", "missing", "duplicate", "wrong_run", "unknown_id"]
+)
+def test_second_review_requires_distinct_complete_bound_evidence(mutation):
+    args = fixtures()
+    second = args[-1]
+    if mutation == "same_reviewer":
+        second.reviewer_id = args[-2].reviewer_id
+    elif mutation == "missing":
+        second.reviews.pop()
+    elif mutation == "duplicate":
+        second.reviews[-1] = copy.deepcopy(second.reviews[0])
+    elif mutation == "wrong_run":
+        second.run_sha256 = "c" * 64
+    else:
+        second.reviews[0].id = "unknown-product"
+    assert evaluation.score(*args)["decision"] == "incomplete"
+
+
+def test_both_reviewers_contribute_to_average_and_claim_union():
+    args = fixtures()
+    first, second = args[-2:]
+    first.reviews[0].rating = 3
+    assert evaluation.score(*args)["metrics"]["human_rating_average"] == 159 / 40
+    second.reviews[0].rating = 5
+    assert evaluation.score(*args)["decision"] == "targets_met"
+    first.reviews[0].invented_claim = second.reviews[0].invented_claim = True
+    report = evaluation.score(*args)
+    assert report["decision"] == "targets_not_met"
+    assert report["metrics"]["invented_claims"] == 1
+    assert len({item["reviews_sha256"] for item in report["reviewer_summaries"]}) == 2
 
 
 @pytest.mark.parametrize(
     "mutation", ["missing", "duplicate", "failed", "dataset", "reviews", "image"]
 )
 def test_incomplete_or_unbound_records_never_pass(mutation):
-    dataset, dataset_hash, run, run_hash, reviews = fixtures()
+    dataset, dataset_hash, run, run_hash, reviews, second_reviews = fixtures()
     if mutation == "missing":
         reviews.reviews.pop()
     elif mutation == "duplicate":
@@ -91,7 +132,8 @@ def test_incomplete_or_unbound_records_never_pass(mutation):
     else:
         run.image_sha256[dataset.cases[-1].id] = run.image_sha256[dataset.cases[0].id]
     assert (
-        evaluation.score(dataset, dataset_hash, run, run_hash, reviews)["decision"] == "incomplete"
+        evaluation.score(dataset, dataset_hash, run, run_hash, reviews, second_reviews)["decision"]
+        == "incomplete"
     )
 
 
@@ -174,7 +216,7 @@ def test_human_rating_must_be_explicit_valid_integer(rating):
 
 
 def test_cli_binds_files_and_never_prints_draft_content(monkeypatch, tmp_path, capsys):
-    dataset, _, run, _, reviews = fixtures()
+    dataset, _, run, _, reviews, second_reviews = fixtures()
     dataset_path, run_path = tmp_path / "dataset.json", tmp_path / "run.json"
     review_path, output_path = tmp_path / "reviews.json", tmp_path / "summary.json"
     evaluation.write_json(dataset_path, dataset.model_dump(mode="json"))
@@ -184,6 +226,9 @@ def test_cli_binds_files_and_never_prints_draft_content(monkeypatch, tmp_path, c
     _, run_hash = evaluation.read_json(run_path)
     reviews.run_sha256 = run_hash
     evaluation.write_json(review_path, reviews.model_dump(mode="json"))
+    second_reviews.run_sha256 = run_hash
+    second_review_path = tmp_path / "second-reviews.json"
+    evaluation.write_json(second_review_path, second_reviews.model_dump(mode="json"))
     monkeypatch.setattr(
         sys,
         "argv",
@@ -196,6 +241,8 @@ def test_cli_binds_files_and_never_prints_draft_content(monkeypatch, tmp_path, c
             str(run_path),
             "--reviews",
             str(review_path),
+            "--reviews",
+            str(second_review_path),
             "--output",
             str(output_path),
         ],
@@ -232,3 +279,24 @@ def test_runner_records_all_twenty_and_redacts_provider_exception(monkeypatch, t
     assert len(calls) == len(run.observations) == 20
     assert all(item.error == "EVAL_CASE_FAILED" for item in run.observations)
     assert "private-provider-secret" not in run.model_dump_json()
+
+
+@pytest.mark.parametrize("review_count", [1, 3])
+def test_cli_requires_exactly_two_review_files(monkeypatch, tmp_path, review_count):
+    dataset_path, output_path = tmp_path / "dataset.json", tmp_path / "summary.json"
+    evaluation.write_json(dataset_path, fixtures()[0].model_dump(mode="json"))
+    args = [
+        "evaluate_listings.py",
+        "score",
+        "--dataset",
+        str(dataset_path),
+        "--run-file",
+        "missing-run.json",
+        "--output",
+        str(output_path),
+    ]
+    for _ in range(review_count):
+        args.extend(["--reviews", "missing-reviews.json"])
+    monkeypatch.setattr(sys, "argv", args)
+    assert evaluation.main() == 2
+    assert not output_path.exists()

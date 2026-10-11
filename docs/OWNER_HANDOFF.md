@@ -82,7 +82,9 @@ bounded first page; use R2 continuation tokens for a complete production invento
    CSP, proxy limits, health checks, worker and actual alert delivery. Establish managed
    backup retention; perform hosted restore and worker/provider outage/retry drills.
 5. **Run the roadmap evaluations.** Use 20 real products: at least 18/20 correct
-   categories, quality at least 4/5, no invented claims and draft p95 below 20 s.
+   categories, quality at least 4/5 from two teammates each reviewing all 20 products,
+   no invented claims and draft p95 below 20 s. Supply two distinct bound review files
+   using the repeated --reviews argument in evals/README.md; one panel cannot pass.
    Run 15 buyer tasks with at least 14/15 success, independent MCP client/Inspector,
    1,000-product search p95 below 1 s, all-screen accessibility at least 90 and hosted
    LCP below 2.5 s. Have an independent judge complete a real sandbox purchase under

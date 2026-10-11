@@ -166,7 +166,7 @@ def run_dataset(dataset, dataset_hash, directory):
     )
 
 
-def score(dataset, dataset_hash, run, run_hash, reviews):
+def score(dataset, dataset_hash, run, run_hash, reviews, second_reviews=None):
     """Calculate targets from complete, bound records; missing evidence never passes."""
     report = {
         "evaluation": "listing_quality_and_draft_latency",
@@ -180,9 +180,12 @@ def score(dataset, dataset_hash, run, run_hash, reviews):
             "Owner-supplied photographs and human ratings; independent review required"
         ),
     }
+    if second_reviews is None or reviews.reviewer_id == second_reviews.reviewer_id:
+        return report
+    panels = (reviews, second_reviews)
     ids = {case.id for case in dataset.cases}
     outputs = {item.id: item for item in run.observations}
-    ratings = {item.id: item for item in reviews.reviews}
+    ratings = [{item.id: item for item in panel.reviews} for panel in panels]
     hashes_valid = set(run.image_sha256) == ids and all(
         len(run.image_sha256[case.id]) == len(case.images)
         and all(re.fullmatch(r"[a-f0-9]{64}", value) for value in run.image_sha256[case.id])
@@ -191,24 +194,27 @@ def score(dataset, dataset_hash, run, run_hash, reviews):
     all_hashes = [value for values in run.image_sha256.values() for value in values]
     if (
         run.dataset_sha256 != dataset_hash
-        or reviews.run_sha256 != run_hash
+        or any(panel.run_sha256 != run_hash for panel in panels)
         or len(outputs) != len(run.observations)
-        or len(ratings) != len(reviews.reviews)
+        or any(
+            len(records) != len(panel.reviews)
+            for records, panel in zip(ratings, panels, strict=True)
+        )
         or set(outputs) != ids
-        or set(ratings) != ids
+        or any(set(records) != ids for records in ratings)
         or not hashes_valid
         or len(set(all_hashes)) != len(all_hashes)
         or any(item.draft is None or item.error is not None for item in outputs.values())
     ):
         return report
     correct = sum(outputs[case.id].draft.category == case.category for case in dataset.cases)
-    rating_sum = sum(item.rating for item in ratings.values())
-    invented = sum(item.invented_claim for item in ratings.values())
+    rating_sum = sum(item.rating for records in ratings for item in records.values())
+    invented = sum(any(records[case_id].invented_claim for records in ratings) for case_id in ids)
     # Nearest-rank p95 of all twenty observations, never successful/fast subsets.
     p95 = sorted(item.elapsed_seconds for item in outputs.values())[math.ceil(0.95 * 20) - 1]
     checks = {
         "category_at_least_18_of_20": correct >= 18,
-        "human_average_at_least_4_of_5": rating_sum >= 80,
+        "human_average_at_least_4_of_5": rating_sum >= 160,
         "zero_invented_claims": invented == 0,
         "draft_p95_under_20_seconds": p95 < 20,
     }
@@ -218,13 +224,22 @@ def score(dataset, dataset_hash, run, run_hash, reviews):
         metrics={
             "products": 20,
             "category_correct": correct,
-            "human_rating_average": rating_sum / 20,
+            "human_reviews": 40,
+            "human_rating_average": rating_sum / 40,
             "invented_claims": invented,
             "draft_p95_seconds": p95,
         },
         checks=checks,
-        reviewer_id=reviews.reviewer_id,
-        reviews_sha256=digest(json.dumps(reviews.model_dump(mode="json"), sort_keys=True).encode()),
+        reviewer_summaries=[
+            {
+                "reviewer_id": panel.reviewer_id,
+                "human_rating_average": sum(item.rating for item in panel.reviews) / 20,
+                "reviews_sha256": digest(
+                    json.dumps(panel.model_dump(mode="json"), sort_keys=True).encode()
+                ),
+            }
+            for panel in panels
+        ],
     )
     return report
 
@@ -235,7 +250,9 @@ def main():
     parser.add_argument("--dataset", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--run-file")
-    parser.add_argument("--reviews")
+    parser.add_argument(
+        "--reviews", action="append", help="Repeat for each of two human review files"
+    )
     args = parser.parse_args()
     try:
         if Path(args.output).exists():
@@ -248,16 +265,16 @@ def main():
             _, run_hash = read_json(args.output)
             print(json.dumps({"status": "recorded", "run_sha256": run_hash}))
             return 0 if all(item.draft is not None for item in run.observations) else 1
-        if not args.run_file or not args.reviews:
+        if not args.run_file or not args.reviews or len(args.reviews) != 2:
             raise ValueError("EVAL_INPUT_INVALID")
         run_data, run_hash = read_json(args.run_file)
-        review_data, _ = read_json(args.reviews)
+        review_data = [read_json(path)[0] for path in args.reviews]
         report = score(
             dataset,
             dataset_hash,
             Run.model_validate(run_data),
             run_hash,
-            Reviews.model_validate(review_data),
+            *(Reviews.model_validate(data) for data in review_data),
         )
         write_json(args.output, report)
         print(json.dumps({"decision": report["decision"], "gate_approval": False}))
