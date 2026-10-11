@@ -140,3 +140,17 @@ CI now runs both browser suites. Previous monitoring revision ac6f21d passed
 all five jobs: https://github.com/suriyaprakash-25/AgentShelf/actions/runs/38110401055.
 The optimized revision CI is separate evidence. Provider receipt, licensed
 Studio deployment and all staging/live gates remain unaccepted.
+
+## External uptime probe implementation
+
+The optimized revision 63cd60c passed all five CI jobs, including packaged browser
+workflows: https://github.com/suriyaprakash-25/AgentShelf/actions/runs/38110769391.
+Implemented a standard-library external /healthz probe and a five-minute scheduled
+workflow, inactive until STAGING_ORIGIN is configured on the default branch.
+Fourteen controlled transport/validation/CLI cases pass (2.207 seconds); these are
+additional operations tests, not a change to the 190-test backend count. Local
+packaged API/PostgreSQL verification returned HEALTHY/200, then HTTP_FAILURE/503
+when the owned isolated database was stopped. Lint and format checks pass.
+No staging address, hosted schedule or operator notification receipt is verified.
+The source external-uptime acceptance checkbox therefore remains open. The probe
+does not replace nightly provider tests, worker outage drills or real alert receipt.

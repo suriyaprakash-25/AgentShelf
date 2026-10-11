@@ -117,3 +117,13 @@ in addition to development checks. Missing/unavailable monitoring keeps the
 catalog working without fetching the SDK. The packaged Studio check verifies
 its missing-licence gate and continuing catalog access; actual licensed Studio
 acceptance remains open. See RUNBOOK.md for the production-check command.
+
+## External uptime implementation
+
+A scheduled GitHub workflow and standard-library /healthz checker are ready for
+owner activation. Fourteen operations tests pass, and the real isolated local
+API/database returns healthy before an intentional database outage and 503 during
+it. Set STAGING_ORIGIN after HTTPS sandbox staging exists, review/merge the workflow
+onto the default branch, configure owner/backup failure notifications and complete
+the staged outage/recovery/notification drill in RUNBOOK.md. Missing configuration
+leaves scheduled checks inactive; it is not external monitoring acceptance.

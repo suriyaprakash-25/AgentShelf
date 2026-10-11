@@ -26,6 +26,7 @@ Source roadmap acceptance and independent release gates remain separate.
 - [x] Actual AG Studio custom widget/theme and framework analyst, locally browser tested.
 - [x] Same-origin deployment container built; non-root runtime/migrations/catalog/UI checked with PostgreSQL 17.
 - [x] API/worker/private-storage blueprint authored.
+- [x] External API/database uptime probe, sanitized failure evidence, inactive scheduled workflow and 14 operations tests; local database outage detected.
 
 - [x] Bounded JSON/MCP bodies, verified lost-order correlation and auditable dry-run retention tools.
 - [x] October 11 full local suite: 190 backend tests, 13 development and 12 packaged browser tests, PostgreSQL 17 restore and no migration drift.

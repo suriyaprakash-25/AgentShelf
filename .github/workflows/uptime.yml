@@ -1,0 +1,32 @@
+name: Staging API and database uptime
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
+permissions:
+  contents: read
+concurrency:
+  group: staging-uptime
+  cancel-in-progress: false
+jobs:
+  health:
+    # Scheduled checks are inactive until the owner supplies the staging origin.
+    # A manual run with missing configuration fails explicitly.
+    if: github.event_name == 'workflow_dispatch' || vars.STAGING_ORIGIN != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      STAGING_ORIGIN: ${{ vars.STAGING_ORIGIN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check API and database contract
+        run: python scripts/check-uptime.py > uptime-result.json
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: uptime-failure
+          path: uptime-result.json
+          retention-days: 7

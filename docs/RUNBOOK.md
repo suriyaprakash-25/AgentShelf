@@ -338,3 +338,39 @@ The SDK wrapper exports only init and captureMessage, reducing the optional buil
 chunk from 435.88 KB (146.72 KB gzip) to 93.29 KB (32.02 KB gzip). Both measurements
 are build sizes, not a hosted latency or Lighthouse result. Missing/disabled browser
 monitoring configuration does not fetch this chunk; catalog use remains available.
+
+## External API and database uptime
+
+`scripts/check-uptime.py` checks the real /healthz response without authentication.
+It requires HTTP 200, status=ok, database=reachable and the expected PayPal mode.
+Redirects, malformed/oversized bodies, database failure and network timeouts fail.
+The response body, URL and exception text are excluded from its JSON report.
+Calls have a ten-second socket timeout and an 8 KB response limit. No retry hides
+an outage. The workflow job has a two-minute overall execution limit.
+
+After HTTPS sandbox staging exists, set the repository Actions variable
+STAGING_ORIGIN to its origin, for example https://your-service.onrender.com,
+without a path, query, fragment or credentials. Do not put a secret there.
+Review and merge .github/workflows/uptime.yml onto the default branch to activate
+its schedule. It runs every five minutes when STAGING_ORIGIN is configured;
+GitHub scheduled execution can be delayed, so this is not a guaranteed five-minute
+alert service. A manual run with missing configuration fails explicitly. Scheduled
+jobs without configuration are inactive, not health evidence. The check expects
+sandbox; a live pilot needs a separate target/mode workflow and alert acceptance.
+
+Enable GitHub Actions failure notifications for the owning operator and a backup.
+Use the GitHub notification settings documented at
+https://docs.github.com/en/account-and-profile/managing-subscriptions-and-notifications-on-github/setting-up-notifications/configuring-notifications.
+In a reviewed staging maintenance window, stop only the staging database/service,
+confirm the workflow fails and an operator receives its notification, restore the
+service, and record recovery plus receipt times. Never perform this drill on a live
+merchant service without approved maintenance. The CLI returns exit 1 on failure;
+the workflow retains a sanitized failure artifact for seven days. No Slack/email
+provider messages are sent by this code. Configuration alone does not prove receipt.
+
+Local verification: `python scripts/check-uptime.py --origin http://127.0.0.1:18000
+--allow-loopback`. The HTTP exception is restricted to an explicitly allowed
+loopback host. `python scripts/tests/test_uptime.py` runs controlled transport tests;
+CI executes them separately from the database/backend suite. The probe does not
+establish worker health or real PayPal/Meta/AI delivery; use the operations screen
+and provider acceptance checks for those requirements.

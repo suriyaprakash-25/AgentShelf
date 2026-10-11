@@ -12,7 +12,7 @@ Jaipur textile seller, selling to overseas buyers.
 The source guide is preserved in [docs/BUILD_GUIDE.pdf](docs/BUILD_GUIDE.pdf).
 Read [the implementation plan](docs/IMPLEMENTATION_PLAN.md) and [actual status](docs/STATUS.md)
 before judging readiness. Sandbox is the judge environment; live rollout is a separate gate.
-See [the owner handoff](docs/OWNER_HANDOFF.md) for verified October 10 results and the remaining account, policy, deployment and acceptance tasks.
+See [the owner handoff](docs/OWNER_HANDOFF.md) for verified October 11 results and the remaining account, policy, deployment and acceptance tasks.
 
 ## Try the local build
 
@@ -38,7 +38,8 @@ See [the runbook](docs/RUNBOOK.md) for configuration, manual setup and verificat
 6. A verified webhook reconciles capture and drives seller notification.
 7. Seller tracking is sent back to PayPal.
 
-The codebase does not yet implement/verify this entire path. The
+These workflows are implemented and locally tested with controlled provider responses;
+the full path still requires real-service acceptance on HTTPS staging. The
 [architecture](docs/ARCHITECTURE.md) and [MCP contract](docs/MCP.md) describe the design.
 
 | PayPal capability | Candidate implementation |
@@ -48,7 +49,9 @@ The codebase does not yet implement/verify this entire path. The
 | Read order | Approval and capture reconciliation |
 | Capture | Locked local order and exact amount verification |
 | Verify webhook | Five signature headers, registered webhook ID |
-| Tracking/refunds/catalog | Planned in roadmap order; no success claim |
+| Tracking | Seller-owned tracking push and provider acknowledgement verification |
+| Refunds/disputes | Verified event accounting and operator review; no automatic refund decision |
+| Catalog | Public storefront and MCP search over PostgreSQL products |
 
 ## AI and trust
 
@@ -66,7 +69,14 @@ uv run --env-file ../.env pytest
 cd ../frontend
 npm run lint
 npm run build
+npm run test:e2e
+npm run test:e2e:production
 ```
+
+Browser tests require the seeded local API on port 8000; production checks use the
+built dist on port 5174 and verify the missing AG Studio licence gate. Operations
+probe tests: `python scripts/tests/test_uptime.py`. See the runbook for the external
+uptime workflow setup and notification acceptance; hosted monitoring is not active.
 
 Set `TEST_DATABASE_URL` to a dedicated `_test` Postgres database for integration tests.
 Provider mocks prove local failure handling only. Real sandbox tests, public staging,
