@@ -271,3 +271,23 @@ seconds, including twenty-nine listing tests and the actual CLI/hash binding. Ru
 and format pass; source PDF hash unchanged. No real photographs, model request or human
 quality evaluation was performed. Distinct IDs do not independently prove human identity
 or independent judgement. Provider, staging and roadmap gate acceptance remain open.
+
+## Model transport retry policy and installed-SDK coverage
+
+Removed additional SDK transport retries from listing, buyer and analytics requests.
+Thirty-second socket timeouts remain; invalid listing JSON/schema still has exactly
+one correction attempt. Transient listing failures use the existing durable queue's
+backoff and five-attempt limit; buyer/analytics expose their existing safe fallback.
+This prevents hidden request multiplication, not a guaranteed thirty-second overall
+deadline or a hosted latency result. Queue/provider/storage time still needs measurement.
+
+Fourteen tests exercise the actual installed Anthropic SDK over controlled HTTP:
+timeout/429/500 single-attempt behavior across all three boundaries, redacted errors,
+schema correction/exhaustion, unsafe-draft refusal and async success. An additional
+real PostgreSQL listing workflow test uploads/processes a photo, gets SDK 429, verifies
+the durable queued retry and subsequent successful draft without publication. Focused
+provider/worker/listing/buyer/analytics suite: 28 passed in 15.77 seconds. Full native
+PostgreSQL 17 suite: 280 passed in 89.40 seconds, with no skips, failures or errors,
+including actual restore. Ruff lint/format pass and source PDF hash unchanged. No real
+model request, provider acceptance or human quality run was performed; external gates
+remain open. See RUNBOOK.md for rate-limit recovery and timing limitations.

@@ -197,3 +197,9 @@ reviewing all twenty products from the same run. Keep both anonymous review IDs 
 hashes, combined forty-rating average and per-reviewer averages. Either person's
 invented-claim flag prevents a pass. Actual human identity/review independence and
 real photograph/model quality remain owner evidence, not protocol-test conclusions.
+
+Model boundaries disable hidden SDK transport retries while retaining 30-second socket
+timeouts and the listing schema correction attempt. Durable listing jobs own provider
+failure backoff; buyer/analytics expose their safe fallbacks. Direct installed-SDK HTTP
+tests and a real-PostgreSQL queue recovery test verify this policy. Whole-workflow
+latency and real Anthropic availability/quality remain separate acceptance evidence.

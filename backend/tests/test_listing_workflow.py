@@ -1,6 +1,10 @@
 import io
+import json
 import uuid
+from datetime import timedelta
 
+import anthropic
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
@@ -12,7 +16,7 @@ from app.config import get_settings
 from app.db import session_factory
 from app.listing import validate_draft
 from app.main import create_app
-from app.models import Job, ListingRequest, Product, RateBucket
+from app.models import Job, ListingRequest, Product, RateBucket, utcnow
 from tests.test_sellers import ORIGIN, login
 
 pytestmark = pytest.mark.integration
@@ -205,3 +209,65 @@ def test_model_schema_failure_is_visible_without_publication(db_clean, configure
         assert client.get("/api/me/listings/" + listing).json()["status"] == "failed"
         with session_factory() as db:
             assert db.get(ListingRequest, uuid.UUID(listing)).product_id is None
+
+
+def test_actual_sdk_transport_failure_uses_durable_retry_then_drafts(
+    db_clean, configured, monkeypatch, caplog
+):
+    actual_client = anthropic.Anthropic
+    calls = []
+
+    def respond(request):
+        calls.append(request)
+        if len(calls) == 1:
+            return httpx.Response(
+                429,
+                headers={"retry-after": "0"},
+                json={
+                    "type": "error",
+                    "error": {"type": "rate_limit_error", "message": "private-provider-error"},
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                "id": "msg_controlled",
+                "type": "message",
+                "role": "assistant",
+                "model": "controlled-model",
+                "content": [{"type": "text", "text": json.dumps(DRAFT)}],
+                "stop_reason": "end_turn",
+                "stop_sequence": None,
+                "usage": {"input_tokens": 1, "output_tokens": 1},
+            },
+        )
+
+    monkeypatch.setattr(
+        llm.anthropic,
+        "Anthropic",
+        lambda **kwargs: actual_client(
+            **kwargs, http_client=httpx.Client(transport=httpx.MockTransport(respond))
+        ),
+    )
+    with TestClient(create_app(), base_url="https://testserver") as client:
+        _, headers, _ = login(client, configured)
+        asset = upload(client, headers)
+        listing_id = client.post(
+            "/api/me/listings", json={"media_ids": [asset]}, headers=headers
+        ).json()["id"]
+        assert jobs.run_one() is True
+        assert len(calls) == 1
+        with session_factory() as db, db.begin():
+            job = db.scalar(select(Job).where(Job.kind == "listing_draft"))
+            assert job.status == "queued" and job.attempts == 1
+            assert job.last_error == "AI_UNAVAILABLE" and job.run_after > utcnow()
+            assert db.get(ListingRequest, uuid.UUID(listing_id)).status == "queued"
+            job.run_after = utcnow() - timedelta(seconds=1)
+        assert jobs.run_one() is True
+        assert len(calls) == 2
+        with session_factory() as db:
+            job = db.scalar(select(Job).where(Job.kind == "listing_draft"))
+            assert job.status == "done" and job.last_error is None
+            listing = db.get(ListingRequest, uuid.UUID(listing_id))
+            assert listing.status == "drafted" and listing.product_id is None
+        assert "private-provider-error" not in caplog.text

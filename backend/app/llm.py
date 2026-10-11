@@ -37,7 +37,7 @@ async def buyer_turn(messages, tools, budget, country):
         )
     try:
         async with anthropic.AsyncAnthropic(
-            api_key=settings.anthropic_api_key.get_secret_value(), timeout=30, max_retries=2
+            api_key=settings.anthropic_api_key.get_secret_value(), timeout=30, max_retries=0
         ) as client:
             response = await client.messages.create(
                 model=settings.anthropic_model,
@@ -54,7 +54,7 @@ async def buyer_turn(messages, tools, budget, country):
 
 
 def draft_listing(images: list[bytes], caption: str = ""):
-    """Two schema attempts; each provider request has a 30s timeout and two bounded retries."""
+    """Two schema attempts with 30s socket timeouts; durable jobs own transport retries."""
     settings = get_settings()
     if not settings.anthropic_api_key:
         raise DomainError(
@@ -86,7 +86,7 @@ def draft_listing(images: list[bytes], caption: str = ""):
     # The caller provides processed JPEG bytes and redacts personal text before this boundary.
     try:
         with anthropic.Anthropic(
-            api_key=settings.anthropic_api_key.get_secret_value(), timeout=30, max_retries=2
+            api_key=settings.anthropic_api_key.get_secret_value(), timeout=30, max_retries=0
         ) as client:
             for attempt in range(2):
                 response = client.messages.create(
@@ -125,7 +125,7 @@ async def analytics_summary(message, facts):
         )
     try:
         async with anthropic.AsyncAnthropic(
-            api_key=settings.anthropic_api_key.get_secret_value(), timeout=30, max_retries=1
+            api_key=settings.anthropic_api_key.get_secret_value(), timeout=30, max_retries=0
         ) as client:
             response = await client.messages.create(
                 model=settings.anthropic_model,

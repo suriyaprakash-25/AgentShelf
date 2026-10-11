@@ -42,6 +42,16 @@ provider creation; automated expiry/reconciliation remains tracked in STATUS.md.
 
 ## Webhook replay and failed jobs
 
+Model SDK transport retries are disabled. Every model request retains a 30-second
+socket timeout; listing JSON/schema validation still gets one correction attempt.
+Listing transport failures persist as AI_UNAVAILABLE in the durable job queue with
+its existing backoff and five-attempt limit. Buyer and analytics failures show their
+existing user fallback; they do not silently repeat model requests. This removes SDK
+retry multiplication, not a guaranteed 30-second whole-workflow deadline. Socket
+timeouts, two schema attempts, preprocessing/storage and queue delays must still be
+included in hosted latency acceptance. A rate-limited listing can exhaust queue retries;
+inspect provider availability and retry the existing failed job through operator controls.
+
 Keep PayPal's event ID stable; delivery duplicates are verified then acknowledged
 without additional processing. Do not bypass signature verification for a replay.
 Worker startup: `uv run --env-file ../.env python worker.py` in backend.
