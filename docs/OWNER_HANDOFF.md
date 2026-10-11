@@ -1,6 +1,6 @@
 # AgentShelf engineering completion and owner handoff
 
-October 10, 2026. This report supersedes the October 9 local engineering snapshot.
+Updated October 11, 2026. This report supersedes the October 9 local engineering snapshot.
 
 AgentShelf has implemented the core pilot workflows and the additional credential-free
 hardening below. It is **not yet accepted for a production launch or a real merchant pilot**.
@@ -25,30 +25,32 @@ real provider tests, deployed measurements and merchant decisions are still requ
   asset caching, private screen no-store headers, lazy page loading and corrected headings.
 - Strengthened CI with isolated packaged API/worker smoke checks and mandatory CI
   PostgreSQL backup clients; added compose.verify.yaml and a sanitized smoke report tool.
-- Full backend suite: **175 passed in 98.29 seconds**, including actual local native
-  PostgreSQL 18.4 backup and restore; no skipped tests in the final run.
-- Browser suite: **5 passed in 16.2 seconds**: real seeded catalog/quote/mobile layout
+- Full backend suite: **182 passed in 145.06 seconds**, including actual local native
+  PostgreSQL 17 backup and restore; no skipped tests in the final run.
+- Browser suite: **8 passed in 26.8 seconds**: real seeded catalog/quote/mobile layout
   and controlled AI, listing and actual AG Studio flows. Real checkout is not covered.
 - Frontend build, lint and formatting passed. Dependency audits found no known
   vulnerabilities at audit time. Ruff passed. The migrated application database
   reports no new migration operations. Test fixtures are not used as migration proof.
 - Local mobile storefront Lighthouse: **performance 91, accessibility 100, LCP 2.0 s**;
   before fixes: 69, 98, 4.2 s. One local route/run, not a hosted or all-screen result.
-- Full-history Gitleaks scanning on the completed code revision found no leaks;
-  the tested code is pushed to feat/foundations at e38a0f9. Remote backend, frontend,
-  container and secrets jobs passed. Browser tests passed; job cleanup was still
-  running when this evidence note was written. CI evidence: https://github.com/suriyaprakash-25/AgentShelf/actions/runs/38036981226.
+- The preceding revision 4ee8a82 has fully green GitHub CI, including browser cleanup:
+  https://github.com/suriyaprakash-25/AgentShelf/actions/runs/38037184879.
+  New changes are committed/pushed after verification; their CI is separate evidence.
+- Added operator loading/empty states and controlled recovery/retry/denial/mobile
+  browser coverage; seven new retention and R2 adapter regression cases pass.
+- Recovered local Docker: newly built image serves UI/catalog, rejects unauthorized
+  and oversized requests, round-trips gzip with immutable caching, runs as UID 10001,
+  and records a fresh worker heartbeat. Migrations report no drift.
+
 
 ## Verification limits and workstation follow-up
 
-The local Docker rebuild could not finish: Docker Desktop returns HTTP 500 and D: filled.
-GitHub CI successfully built this revision and verified the packaged API/worker against
-PostgreSQL 17, migrations/no drift, seeded catalog/UI, security headers, authentication
-and oversized JSON rejection. Local Docker Desktop still needs repair. This remote
-container evidence does not establish funded hosted deployment or provider acceptance.
-Generated frontend files were preserved on E: and a local dependency junction was created;
-source and database were not moved. Free sufficient disk space and restart Docker Desktop.
-No unrelated files or real production records were deleted. Owner disk cleanup is required.
+Docker Desktop and disk availability recovered on October 11. The local rebuild and
+isolated PostgreSQL 17 packaged API/worker verification now pass. The previous native
+Postgres was stopped; tests used fresh, separate demo/test databases. Original database
+files were untouched. Generated frontend dependencies remain on E: through a junction.
+This container evidence does not establish funded deployment or provider acceptance.
 
 Seller and optional AG Studio chunks remain large (approximately 1.01 MB and 4.36 MB
 before compression); they load separately. Test authenticated seller/Studio performance

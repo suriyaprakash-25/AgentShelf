@@ -1,6 +1,6 @@
 # AgentShelf delivery checklist
 
-Updated October 10, 2026. Checked boxes mean tested local implementation only.
+Updated October 11, 2026. Checked boxes mean tested local implementation only.
 Source roadmap acceptance and independent release gates remain separate.
 
 ## Implemented and checked locally
@@ -28,7 +28,9 @@ Source roadmap acceptance and independent release gates remain separate.
 - [x] API/worker/private-storage blueprint authored.
 
 - [x] Bounded JSON/MCP bodies, verified lost-order correlation and auditable dry-run retention tools.
-- [x] October 10 full local suite: 175 backend tests, 5 browser tests, native restore and no migration drift.
+- [x] October 11 full local suite: 182 backend tests, 8 browser tests, PostgreSQL 17 restore and no migration drift.
+- [x] Operator confirmation/error/retry/denial/mobile browser checks and retention/R2 regression cases.
+- [x] Recovered local Docker: fresh image, non-root API, worker heartbeat, gzip/cache/auth smoke checks.
 - [x] Local mobile storefront: performance 91, accessibility 100, LCP 2.0 seconds.
 
 ## Required before full Must and pilot acceptance
@@ -41,7 +43,7 @@ Source roadmap acceptance and independent release gates remain separate.
 - [ ] Anthropic spike/model choice, 20-product quality, image-instruction/PII tests and draft latency.
 - [ ] Fifteen buyer tasks, money-path browser flow and independent MCP Inspector/client tests.
 - [ ] AG Studio deployment licence covering judging and real model acceptance.
-- [x] Remote PostgreSQL 17 backend/container checks and complete-history secret scan on e38a0f9.
+- [x] Remote PostgreSQL 17 backend/container checks and complete-history secret scan and fully green CI on preceding revision 4ee8a82.
 - [ ] Funded hosted startup and real provider checks.
 - [ ] Funded HTTPS staging; verify origin/cookies/CSP/proxy quotas and external purchase under five minutes.
 - [ ] Managed backups/restore/retention and owner-approved execution of media/personal-data maintenance.

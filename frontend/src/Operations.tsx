@@ -83,7 +83,9 @@ export function Operations() {
       <span className="eyebrow">OPERATIONS</span>
       <h1>Review and recover.</h1>
       <Link to="/dashboard">Seller dashboard</Link>
-      <p role="alert">{error}</p>
+      {error && <p role="alert">{error}</p>}
+      {!data && !error && <p role="status">Loading operations�</p>}
+      {busy && <p role="status">Verifying your recovery action�</p>}
       {data && (
         <>
           <section className="panel">
@@ -105,6 +107,7 @@ export function Operations() {
             succeeded before an acknowledgement was lost; review before
             retrying.
           </p>
+          {!data.failed_jobs.length && <p>No failed jobs to review.</p>}
           {data.failed_jobs.map((job) => (
             <section className="panel" key={job.id}>
               <strong>
@@ -124,6 +127,7 @@ export function Operations() {
           ))}
           <h2>Payment reconciliation</h2>
           <h3>Refunds and disputes</h3>
+          {!data.adjustments.length && <p>No refunds or disputes recorded.</p>}
           {data.adjustments.map((item) => (
             <section className="panel" key={item.resource_id}>
               <strong>
@@ -137,6 +141,7 @@ export function Operations() {
               </p>
             </section>
           ))}
+          {!data.orders.length && <p>No payment orders awaiting review.</p>}
           {data.orders.map((order) => (
             <section className="panel" key={order.id}>
               <strong>Order {order.id}</strong>

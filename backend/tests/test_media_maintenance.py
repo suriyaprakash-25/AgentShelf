@@ -83,3 +83,29 @@ def test_storage_delete_refuses_traversal_and_other_environment(monkeypatch, tmp
     for key in ["../private.env", f"live/{uuid.uuid4()}/{uuid.uuid4()}.jpg"]:
         with pytest.raises(DomainError):
             storage.delete(key)
+
+
+def test_cleanup_preserves_legacy_product_photo_reference(db_clean, monkeypatch, tmp_path):
+    monkeypatch.setattr(storage, "ROOT", tmp_path / "images")
+    product_id, _, _ = fixture_data()
+    asset_id = uuid.uuid4()
+    old = utcnow() - timedelta(days=10)
+    with session_factory() as db, db.begin():
+        product = db.get(Product, uuid.UUID(product_id))
+        seller_id = product.seller_id
+        db.get(Seller, seller_id).is_operator = True
+        key = f"sandbox/{seller_id}/{asset_id}.jpg"
+        storage.put(key, b"processed-fixture")
+        os.utime(storage.local_path(key), (old.timestamp(), old.timestamp()))
+        product.images = [f"/api/media/{asset_id}"]
+        db.add(
+            MediaAsset(
+                id=asset_id, seller_id=seller_id, object_key=key, sha256="a" * 64, created_at=old
+            )
+        )
+    result = media_maintenance.cleanup(seller_id, apply=True)
+    assert result["eligible"] == 0 and result["deleted"] == 0 and result["retained"] == 1
+    assert storage.local_path(key).exists()
+    with session_factory() as db:
+        assert db.get(MediaAsset, asset_id)
+        assert db.scalar(select(func.count()).select_from(OpsAudit)) == 0

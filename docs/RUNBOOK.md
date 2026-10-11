@@ -45,8 +45,7 @@ provider creation; automated expiry/reconciliation remains tracked in STATUS.md.
 Keep PayPal's event ID stable; delivery duplicates are verified then acknowledged
 without additional processing. Do not bypass signature verification for a replay.
 Worker startup: `uv run --env-file ../.env python worker.py` in backend.
-Jobs retry at most five times and store only error codes. Inspect failed job codes in
-Postgres until the authenticated operations screen is implemented.
+Jobs retry at most five times and store only error codes. Inspect failure codes and worker heartbeat in the authenticated /operations screen.
 Handler exceptions roll back their database writes before scheduling the retry.
 Unexpected handler errors use `JOB_HANDLER_FAILED`; sensitive exception text is excluded.
 Database connection/commit failures still surface to the process supervisor.
@@ -69,10 +68,10 @@ SameSite=Lax cookies. `FRONTEND_URL` must exactly match the browser origin; conf
 the proxy/CORS and verify the real browser flow before release. Seller writes require
 both that Origin and the session-bound CSRF token from `/api/me`.
 
-The dashboard currently uses AG Grid Community, with a custom theme, filters,
-sorting, pagination and current-page CSV exports. It is not an AG Studio integration
-or a claim that the sponsor checklist passes. Session/link expiry cleanup and a full
-policy/merchant verification workflow remain release work.
+The dashboard uses AG Grid Community for tables, filters, sorting, pagination and
+current-page CSV exports. Optional AG Studio includes a custom widget/theme and
+framework analyst; see the licensing section. Session/link expiry cleanup is implemented.
+Real sponsor acceptance and policy/merchant verification remain release work.
 
 ## Seller fulfilment
 
@@ -194,8 +193,8 @@ explicit separately reviewed reset policy.
 
 Hourly worker cleanup deletes expired authentication records and sufficiently stale
 quota buckets and clears buyer chat text after 30 days. Payment/budget/audit records
-are retained. It can also run via `maintenance.py cleanup-expired`. Orphaned media,
-legacy webhook personal data and address retention need their own audited cleanup plan.
+are retained. It can also run via `maintenance.py cleanup-expired`. Bounded orphan media and historical personal-data maintenance are implemented;
+apply only after the owner approves the policy and reviews the dry-run results.
 
 ## Same-origin deployment and acceptance
 
@@ -209,7 +208,8 @@ PUBLIC_API_URL. Do not publish the fictional catalog as a real merchant.
 
 Local container build and isolated PostgreSQL 17 startup/migration/catalog/UI checks passed.
 Hosted deployment is not verified. CI now includes a container build
-and matching PostgreSQL 17 backup clients, but remote results are not yet available.
+and matching PostgreSQL 17 backup clients. The preceding revision 4ee8a82 has fully
+green remote CI; new revisions must be checked separately.
 Validate the image, clean-machine startup, migrations, readiness, worker heartbeat,
 private storage, proxy IP trust/shared quotas, secure cookie/CSRF/CSP, provider callbacks,
 backups and actual alerts on funded staging. Keep sandbox/live secrets, database and
@@ -280,3 +280,15 @@ and restore Docker Desktop health before repeating compose.verify.yaml verificat
 The local Docker engine responds HTTP 500. GitHub CI on e38a0f9 builds and verifies
 the new hardening revision against PostgreSQL 17; use that exact run as evidence,
 not the earlier local image. No actual provider or funded host is verified by it.
+
+
+## October 11 workstation recovery
+
+Docker Desktop now builds and runs the packaged API/worker successfully. Fresh local
+verification uses project agentshelf-oct11-verify and synthetic, separate PostgreSQL 17
+test/demo databases. The test suite has 182 passing backend cases and 8 passing browser
+cases. The original native cluster was not running and its files were preserved.
+The October 10 incident above is historical; a factory reset or broad data deletion
+was not required. The newly verified image has gzip/immutable static assets, no-store
+private routes, fresh worker heartbeat and no migration drift. Hosted provider and
+managed backup acceptance remain open.

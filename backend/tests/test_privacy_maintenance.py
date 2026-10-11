@@ -75,3 +75,31 @@ def test_retention_refuses_unverified_operator_and_short_policy(db_clean):
         privacy_maintenance.review(days=1)
     with pytest.raises(Exception, match="operator"):
         privacy_maintenance.review(uuid.uuid4(), True)
+
+
+@pytest.mark.parametrize("reason", ["dispute", "reversal", "uncertain", "active"])
+def test_retention_keeps_addresses_needed_for_payment_or_fulfilment_review(
+    db_clean, provider, reason
+):
+    from app.models import PaymentAdjustment
+
+    order_id, seller_id, _ = paid_order(provider)
+    with session_factory() as db, db.begin():
+        db.get(Seller, seller_id).is_operator = True
+        order = db.get(Order, order_id)
+        order.status = "paid" if reason == "active" else "shipped"
+        order.ship_to = {"address": "needed-for-review"}
+        order.updated_at = utcnow() - timedelta(days=40)
+        if reason == "uncertain":
+            order.reconciliation_error = "REVIEW_REQUIRED"
+        if reason in {"dispute", "reversal"}:
+            db.add(
+                PaymentAdjustment(
+                    resource_id="REVIEW-FIXTURE", order_id=order_id, kind=reason, status="RESOLVED"
+                )
+            )
+    result = privacy_maintenance.review(seller_id, True)
+    assert result["terminal_addresses"] == 0
+    with session_factory() as db:
+        assert db.get(Order, order_id).ship_to == {"address": "needed-for-review"}
+        assert db.query(OpsAudit).count() == 0

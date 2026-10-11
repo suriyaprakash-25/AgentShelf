@@ -1,6 +1,6 @@
 # AgentShelf status and evidence
 
-Updated October 10, 2026. **Must workflow implementations substantially expanded; production and pilot acceptance remain open.**
+Updated October 11, 2026. **Must workflow implementations substantially expanded; production and pilot acceptance remain open.**
 Checkout: `D:\PayPal\PayPal AI Hackathon\AgentShelf`, branch `feat/foundations`.
 The unchanged source PDF has SHA-256
 `69EA49D89F45A4752E72B90FCBA2C8BFFFDDFDD076523F00559BC4F5EF19D8A4`.
@@ -12,11 +12,11 @@ they must not be read as a current implementation assessment.
 
 | Check | Result | Evidence boundary |
 | --- | --- | --- |
-| Full backend suite | 163 passed, 88.67 seconds | Python 3.12, real local PostgreSQL 18.4; external services controlled in tests |
+| Full backend suite | 182 passed, 145.06 seconds | Python 3.12, isolated local PostgreSQL 17; external services controlled in tests |
 | Alembic upgrade/downgrade/upgrade and schema drift | Passed | Dedicated local migration database |
 | Dependency audit | No known backend/frontend vulnerabilities | Installed dependency snapshot |
 | Frontend lint, format and production build | Passed after AG Studio integration | No staging performance claim |
-| Browser suite | Five tests passed, 14.8 seconds | Actual API catalog/mobile plus controlled listing/SSE/Studio browser fixtures |
+| Browser suite | Eight tests passed, 26.8 seconds | Actual API catalog/mobile plus controlled listing/SSE/Studio/operator recovery fixtures |
 | PostgreSQL 17 container payment/worker checks | 24 passed, 11.65 seconds | Orders, capture, webhooks, jobs and reconciliation; controlled providers |
 | Docker build/runtime | Built; UID 10001, PG17 migrations/no drift, DB health, six products and frontend/security headers | Isolated local container; no hosted deployment |
 | Backup and restore | Actual dump restored catalog stock, session budget and quote amount | Separate random empty loopback test DB; no managed-provider backup proof |
@@ -38,8 +38,8 @@ they must not be read as a current implementation assessment.
 | M8 | Owned web/API and WhatsApp tracking with stable PayPal tracker verification | Real sandbox tracking permissions and provider acceptance |
 | M9 | SSE buyer chat, visible tool trace, server-bound country/session, bounded calls and explicit quote approval | Real model 15-task evaluation, deployed money-path browser test |
 | M10 | Secure auth, catalog/order grids, filters/sort/CSV, fulfilment and lazy-loaded AG Studio analytics | Studio custom widget/theme and real framework analyst locally implemented; deployed licence, real model and staged S6 pending |
-| M11 | Same-origin container, API/worker/Postgres Render blueprint, CI, maintenance tools | Remote CI, funded HTTPS deployment, managed backups and independent five-minute purchase |
-| M12 | Shared DB quotas, ownership/CSRF, caption guards, minimized logs/webhooks, bounded images, Sentry scrubbing | Complete deployed red-team/image evaluation, proxy/CSP/accessibility and secret-history scan |
+| M11 | Same-origin container, API/worker/Postgres Render blueprint, CI, maintenance tools | Funded HTTPS deployment, managed backups and independent five-minute purchase |
+| M12 | Shared DB quotas, ownership/CSRF, caption guards, minimized logs/webhooks, bounded images, Sentry scrubbing | Complete deployed red-team/image evaluation, proxy/CSP/accessibility acceptance |
 
 All 14 staged stories and Gate 1/2/3 remain unsigned. Local component tests do not
 establish staged Must acceptance. No real provider payment, message, model request,
@@ -69,7 +69,7 @@ text after 30 days while preserving payment/budget records. Bounded, operator-au
 API serves the built frontend from one HTTPS origin; worker uses the same database,
 private R2 bucket and provider/email secrets. Docker now builds successfully. The non-root packaged API starts against an isolated
 PostgreSQL 17 container and serves the catalog/UI with security headers; migrations
-report no drift. The full native suite uses PostgreSQL 18.4. The code revision e38a0f9 passes remote backend, frontend, container and secrets checks; browser tests pass with final job cleanup still running. See OWNER_HANDOFF.md for the exact CI run.
+report no drift. The full native suite uses PostgreSQL 18.4. The preceding revision 4ee8a82 has fully green GitHub CI: https://github.com/suriyaprakash-25/AgentShelf/actions/runs/38037184879. Current phase checks are recorded below; remote CI is rerun after pushing each change.
 The seller bundle is approximately 1 MB and optional Studio approximately 4.36 MB before compression; The October 10 local mobile storefront audit scores performance 91, accessibility 100 and LCP 2.0 seconds after local fonts, compression and heading fixes. Hosted targets and all authenticated screens remain unverified.
 AG Studio 3.0.0 is integrated with a custom shop widget, theme and Studio Agent Framework analyst.
 The actual component/analyst browser flow passes using controlled aggregate/AI responses.
@@ -83,7 +83,7 @@ require provider setup, permissions, webhooks, templates, domains and acceptance
 Worldwide access is a product goal; receiving eligibility remains merchant-specific.
 USD and US/UK shipping are the initial supported commerce policy.
 
-Latest credential-free phase: 175 backend tests and 5 browser tests pass; native PostgreSQL backup/restore passes and the migrated application database reports no drift. Local Docker Desktop is blocked by HTTP 500 after D: filled; GitHub CI successfully builds and checks the new packaged API/worker with PostgreSQL 17. See OWNER_HANDOFF.md for evidence and the remaining acceptance checklist. Should features
+Latest credential-free phase: 182 backend tests and 8 browser tests pass, including PostgreSQL 17 backup/restore and recovery/privacy safeguards. Docker Desktop recovered; the newly built non-root container passes local catalog, frontend, auth, gzip/cache, worker heartbeat and migration checks against an isolated PostgreSQL 17 database. See OWNER_HANDOFF.md for evidence and the remaining acceptance checklist. Should features
 remain deferred until Gate 2, as required by the source roadmap.
 
 ## AG Studio analytics boundary
@@ -96,3 +96,18 @@ mutation tools, and reports gross amounts separately from net revenue/refunds.
 The Studio framework owns the browser conversation; the server handles Anthropic
 credentials. This initial analyst answers standalone questions, not arbitrary dashboard
 layout tool calls. Product/order editing continues through the owned seller controls.
+
+
+## October 11 operator and recovery verification
+
+The operations screen has explicit loading and empty states. Three controlled browser
+checks verify confirmation/cancellation, session CSRF on correlation/retry, mismatch
+messages without hiding the recovery form, successful refresh, access-denied controls,
+and 375px layout. These are interface checks, not actual provider recovery evidence.
+Seven added backend cases protect legacy product image references and addresses for
+active fulfilment, uncertain payments and resolved dispute/reversal review; R2 cursor,
+exact-key deletion and generic provider error handling use signed-client stubs.
+The full 182-test suite passes without skips, including real dump/restore to a separate
+random drill database. Old native Postgres was not running; verification used a fresh
+isolated Docker PostgreSQL 17 instance with separate test/demo databases.
+Original database files were not modified. The source PDF hash remains unchanged.
