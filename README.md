@@ -1,92 +1,102 @@
 # AgentShelf
 
-**Made by you. Found by AI.** A seller-first storefront that AI shopping agents can
-discover, with server-verified quotes and human-approved PayPal checkout.
+## 1. One-Sentence Pitch & Live Demo Links
 
-Small sellers often have photos and DM conversations, but no catalog a shopping
-agent can read. AgentShelf turns seller-approved listings into an agent-readable
-store and connects purchases to PayPal. Our first demo follows Meera, a fictional
-Jaipur textile seller, selling to overseas buyers.
+**Made by you. Found by AI.** AgentShelf turns WhatsApp product photos and voice notes from independent sellers into an AI-discoverable MCP storefront with server-verified quotes, human-approved PayPal Orders v2 checkout, and automated tracking sync.
 
-**Status: listing, buyer-agent, WhatsApp and operations workflows implemented and locally tested. Production/pilot acceptance is still open; no public deployment or real provider payment is verified.**
-The source guide is preserved in [docs/BUILD_GUIDE.pdf](docs/BUILD_GUIDE.pdf).
-Read [the implementation plan](docs/IMPLEMENTATION_PLAN.md) and [actual status](docs/STATUS.md)
-before judging readiness. Sandbox is the judge environment; live rollout is a separate gate.
-See [the owner handoff](docs/OWNER_HANDOFF.md) for verified October 11 results and the remaining account, policy, deployment and acceptance tasks.
+- **Local Storefront**: `http://localhost:5173/s/meera-jaipur`
+- **Buyer Playground (SSE + MCP Trace)**: `http://localhost:5173/playground`
+- **Seller Dashboard & Copilot**: `http://localhost:5173/dashboard`
+- **MCP Streamable HTTP Endpoint**: `http://localhost:8000/mcp`
+- **Agent Discovery Metadata**: `http://localhost:8000/.well-known/mcp.json`
+- **Devpost Submission & Demo Script**: [docs/DEVPOST_SUBMISSION.md](docs/DEVPOST_SUBMISSION.md)
 
-## Try the local build
+**Status: Must (`M-1`–`M-12`) and Should (`S-1`–`S-6`) workflows are implemented and locally tested against PostgreSQL with controlled provider responses. Production/pilot acceptance remains open (`gate_approval: False`) until real provider credentials and HTTPS staging evidence are recorded.**
+The source guide is preserved unchanged in [docs/BUILD_GUIDE.pdf](docs/BUILD_GUIDE.pdf). Read [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md), [docs/STATUS.md](docs/STATUS.md), and [docs/OWNER_HANDOFF.md](docs/OWNER_HANDOFF.md) before judging release readiness.
 
-Install Python 3.12, uv, Node 22 and Docker. From PowerShell in the repo:
+## 2. The Problem
+
+Independent artisans and small merchants often have product photos and customer conversations on WhatsApp, but no structured catalog that AI shopping agents can search, quote, or purchase from safely.
+
+## 3. Architecture Diagram & Data Flow
+
+```text
+Seller (WhatsApp / Web Studio)
+  │  photos + caption / voice note
+  ▼
+FastAPI + PostgreSQL 17/18 + Durable Worker Queue
+  ├── Listing Workflow (EXIF strip → private R2 → Vision draft → Seller price/stock confirm)
+  ├── Public Storefront (/s/{slug}, schema.org JSON-LD, multi-language copy translation)
+  ├── MCP Server (/mcp, /.well-known/mcp.json: search_catalog, get_product, get_quote, create_checkout, get_order_status)
+  └── PayPal Boundary (Orders v2 create/capture, 5-header Webhook verify, Trackers Batch, Refunds, Invoices, Catalog sync)
+```
+
+1. Seller supplies photos (and optional voice note); AI drafts a listing; seller confirms details, price, and stock.
+2. An MCP client searches live PostgreSQL products via `/mcp`.
+3. The server snapshots a 15-minute quote with item and shipping totals in integer minor units.
+4. Checkout reserves stock (`SELECT ... FOR UPDATE`), checks cumulative session budget, and creates one PayPal order for that quote.
+5. The human buyer approves on PayPal; the server verifies and captures.
+6. A verified PayPal webhook reconciles capture and queues the seller's WhatsApp notification.
+7. Seller tracking is pushed back to PayPal (`POST /v1/shipping/trackers-batch`) and appears on the buyer receipt.
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/MCP.md](docs/MCP.md) for the full technical design.
+
+## 4. PayPal Integration Matrix
+
+| PayPal capability | Endpoint / API | Implementation module |
+| --- | --- | --- |
+| OAuth 2.0 token | `POST /v1/oauth2/token` | Cached client credentials in `backend/app/paypal.py` |
+| Create order with direct payee | `POST /v2/checkout/orders` | Server quote, `PayPal-Request-Id`, `payee.email_address`, approval URL validation |
+| Read order | `GET /v2/checkout/orders/{id}` | Approval, 15-minute reservation expiry, and capture reconciliation |
+| Capture order | `POST /v2/checkout/orders/{id}/capture` | Locked local order and exact minor-unit amount verification |
+| Verify webhook signature | `POST /v1/notifications/verify-webhook-signature` | Five signature headers + registered `PAYPAL_WEBHOOK_ID` |
+| Shipping trackers | `POST /v1/shipping/trackers-batch` | Seller-owned tracking push via web dashboard or WhatsApp `ship #<order>` |
+| Capture refunds (`S-1`) | `POST /v2/payments/captures/{id}/refund` | Seller Copilot refund command + verified webhook accounting |
+| Invoicing (`S-1`) | `POST /v2/invoicing/invoices` + `/send` | Seller Copilot custom order invoicing |
+| Catalog Products (`S-2`) | `POST /v1/catalogs/products` | Mirror live AgentShelf products to PayPal Catalog |
+
+## 5. AI & Agent Capabilities
+
+- **Multimodal Listing Agent (`M-2`, `S-3`, `S-6`)**: Drafts structured listings from 1–4 photos, transcribes WhatsApp voice notes, and translates public listing copy into buyer languages (`es`, `fr`, `de`, `hi`, `ja`) while keeping server-side USD prices and stock authoritative.
+- **MCP Buyer Agent (`M-4`, `M-9`)**: Connects over actual Streamable HTTP MCP transport, streams tool traces over SSE, and enforces explicit human confirmation before checkout.
+- **Seller Copilot & Analytics (`M-10`, `S-1`)**: Provides 7-day sales/stock summaries, custom PayPal invoicing, capture refunds, and a read-only AG Studio analytics assistant over aggregated store metrics.
+- **Trust Boundary**: Models never own prices, stock, shipping, budgets, or payment approval. Street addresses, emails, phones, and secrets are blocked from prompts and logs.
+
+## 6. Evaluation Results & Benchmarks
+
+The [evaluation guide](evals/README.md) provides three reproducible evaluation harnesses:
+- **Listing Quality (`backend/evaluate_listings.py`)**: 20-product runner + two-reviewer human-rating scorer (`>= 4.0/5`, zero hallucinated claims, `p95 < 8s`).
+- **Buyer Agent (`backend/evaluate_buyers.py`)**: 15-task sandbox runner covering stock, budget, ambiguity, destination, and prompt-injection cases.
+- **MCP Search Latency (`backend/evaluate_search.py`)**: 20-query MCP Streamable HTTP benchmark over `>= 1,000` products (`p95 < 1.0s` verified locally against PostgreSQL 17).
+- **Phase B Readiness (`backend/verify_phase_b.py`)**: Preflight verifier for provider env vars and ADR-001 Sandbox payee spike (`make phase-b-preflight`).
+
+Real-provider quality and buyer-task scores remain unaccepted (`gate_approval: False`) until run with real credentials on staging.
+
+## 7. Quickstart (`< 10` Minutes)
+
+Install Python 3.12, `uv`, Node 22, and Docker. From PowerShell in the repository root:
 
 ```powershell
 ./scripts/start-local.ps1
 ```
 
-Open `http://localhost:5173`, then the demo collection. Choose a product in the buyer
-Playground to get a real server quote from the seeded Postgres catalog. No payment
-is simulated; checkout remains unavailable until PayPal credentials are configured.
-API docs: `http://localhost:8000/docs`. MCP: `http://localhost:8000/mcp`.
-See [the runbook](docs/RUNBOOK.md) for configuration, manual setup and verification.
+Or via Make:
 
-## Money path
-
-1. Seller supplies photos; AI drafts a listing; seller confirms details and price.
-2. An MCP client searches live database products.
-3. The server snapshots a 15-minute quote with item and shipping totals.
-4. Checkout reserves stock and creates one PayPal order for that quote.
-5. The human buyer approves on PayPal; the server verifies and captures.
-6. A verified webhook reconciles capture and drives seller notification.
-7. Seller tracking is sent back to PayPal.
-
-These workflows are implemented and locally tested with controlled provider responses;
-the full path still requires real-service acceptance on HTTPS staging. The
-[architecture](docs/ARCHITECTURE.md) and [MCP contract](docs/MCP.md) describe the design.
-
-| PayPal capability | Candidate implementation |
-| --- | --- |
-| OAuth token | Cached client credentials in `paypal.py` |
-| Create order with payee | Server quote, stable request ID, approval link |
-| Read order | Approval and capture reconciliation |
-| Capture | Locked local order and exact amount verification |
-| Verify webhook | Five signature headers, registered webhook ID |
-| Tracking | Seller-owned tracking push and provider acknowledgement verification |
-| Refunds/disputes | Verified event accounting and operator review; no automatic refund decision |
-| Catalog | Public storefront and MCP search over PostgreSQL products |
-
-## AI and trust
-
-Anthropic is the selected provider. Model choice requires the Sprint 0 evaluation;
-listing and agent results are not fabricated. Models never own prices, stock, budget
-or payment approval. Buyer addresses must not enter a model or log.
-Listing quality, buyer task success and real latency metrics are pending.
-The [evaluation guide](evals/README.md) provides the real-photo listing runner, strict
-scoring and human-review templates. Its protocol tests are not quality results.
-The same guide provides the fifteen-task sandbox buyer runner, explicit human payment
-steps and grounded-price/payment review. Real buyer-task outcomes remain pending.
-It also provides a twenty-search MCP latency evaluator that verifies a stable catalog
-of at least 1,000 products and expected IDs/prices. Hosted results remain pending.
-
-## Quality checks
-
-```powershell
-cd backend
-uv run --env-file ../.env ruff check .
-uv run --env-file ../.env pytest
-cd ../frontend
-npm run lint
-npm run build
-npm run test:e2e
-npm run test:e2e:production
+```bash
+make dev
+make demo-reset
 ```
 
-Browser tests require the seeded local API on port 8000; production checks use the
-built dist on port 5174 and verify the missing AG Studio licence gate. Operations
-probe tests: `python scripts/tests/test_uptime.py`. See the runbook for the external
-uptime workflow setup and notification acceptance; hosted monitoring is not active.
+Open `http://localhost:5173` for the storefront and buyer playground, `http://localhost:8000/docs` for the OpenAPI spec, and `http://localhost:8000/mcp` for the MCP endpoint. Third-party MCP clients (Claude Desktop, Cursor, MCP Inspector) can load [evals/mcp_client_config.json](evals/mcp_client_config.json). See [docs/RUNBOOK.md](docs/RUNBOOK.md) for full configuration and recovery procedures.
 
-Set `TEST_DATABASE_URL` to a dedicated `_test` Postgres database for integration tests.
-Provider mocks prove local failure handling only. Real sandbox tests, public staging,
-20-product human evaluation, review gates and the demo video are release prerequisites.
+## 8. Repository Structure
 
-MIT licensed. Built for the PayPal AI Hackathon with Python/FastAPI/MCP/Postgres and
-React/Vite. No production eligibility, winning outcome or error-free guarantee is implied.
+- `backend/app/` — FastAPI application, MCP server (`mcp_server.py`), PayPal boundary (`paypal.py`), WhatsApp boundary (`whatsapp.py`, `whatsapp_workflow.py`), Seller Copilot (`copilot.py`), listing/buyer agents (`llm.py`, `buyer_agent.py`), and background worker (`jobs.py`, `reconciliation.py`).
+- `backend/tests/` — Real PostgreSQL integration, concurrency, security, evaluation protocol, Phase B, and Should-feature test suites.
+- `frontend/src/` — React 19 + TypeScript storefront (`App.tsx`), SSE Buyer Playground (`AiBuyer.tsx`), Seller Dashboard & Copilot (`Seller.tsx`), Listing Studio (`ListingStudio.tsx`), and Operations console (`Operations.tsx`).
+- `evals/` — Evaluation datasets, review templates, and third-party MCP client config (`mcp_client_config.json`).
+- `docs/` — Immutable `BUILD_GUIDE.pdf`, `ROADMAP_SOURCE.md`, `IMPLEMENTATION_PLAN.md`, `STATUS.md`, `DELIVERY_CHECKLIST.md`, `OWNER_HANDOFF.md`, `DEVPOST_SUBMISSION.md`, and `adr/ADR-001-paypal-payee.md`.
+
+## 9. Team, License & Acknowledgements
+
+MIT licensed. Built for the PayPal AI Hackathon with Python, FastAPI, Official MCP SDK, PostgreSQL, and React/Vite. No production merchant eligibility, live payment guarantee, or winning outcome is implied.

@@ -1,6 +1,7 @@
 # MCP interface
 
-Connect a Streamable HTTP client to `http://localhost:8000/mcp` locally.
+Connect a Streamable HTTP client to `http://localhost:8000/mcp` locally, or load [evals/mcp_client_config.json](../evals/mcp_client_config.json) in Claude Desktop, Cursor, or the MCP Inspector (`npx @modelcontextprotocol/inspector`).
+Agent crawlers can discover the server via `GET /.well-known/mcp.json` and read structured `schema.org` Product JSON-LD via `GET /api/stores/{slug}/schema.json` or the `<script type="application/ld+json">` tag embedded on `/s/{slug}`.
 The mounted app lifecycle owns the SDK session manager. Only four product tools
 are exposed; PayPal's developer MCP service is not the product checkout server.
 
@@ -24,6 +25,14 @@ Example tool calls:
 
 ```json
 {"name":"get_quote","arguments":{"product_id":"<server UUID>","qty":1,"ship_to_country":"GB","session_id":"<your session UUID>"}}
+```
+
+```json
+{"name":"create_checkout","arguments":{"quote_id":"<quote UUID>","session_id":"<your session UUID>"}}
+```
+
+```json
+{"name":"get_order_status","arguments":{"order_id":"<order UUID>","session_id":"<your session UUID>"}}
 ```
 
 Never state prices absent a tool result. Ask the buyer to confirm the full quote

@@ -291,3 +291,50 @@ PostgreSQL 17 suite: 280 passed in 89.40 seconds, with no skips, failures or err
 including actual restore. Ruff lint/format pass and source PDF hash unchanged. No real
 model request, provider acceptance or human quality run was performed; external gates
 remain open. See RUNBOOK.md for rate-limit recovery and timing limitations.
+
+## Phase A codebase review and remediation fixes
+
+Resolved ten local codebase bugs and specification discrepancies identified during the
+comprehensive technical review:
+- Configured `--proxy-headers --forwarded-allow-ips='*'` in `Dockerfile` and added
+  `rate_limits.client_ip(request)` so deployed staging/production traffic behind Render's
+  reverse proxy isolates per-client IPs instead of collapsing into one shared IP quota.
+- Aligned frontend PayPal approval URL hostname checks (`App.tsx`, `AiBuyer.tsx`) with
+  backend `paypal.approval_link` (`sandbox.paypal.com`, `www.sandbox.paypal.com`,
+  `paypal.com`, `www.paypal.com`) and added defensive 127-char slicing in `paypal.py`.
+- Separated `chat_text` from `caption_text` in `listing_workflow.py` so buyer and
+  analytics chat queries like `"ship to London"` pass while street addresses, emails,
+  phones, postcodes and API keys remain blocked.
+- Enforced 15-minute unapproved reservation expiry (`reserved_until <= utcnow()`) in
+  `reconciliation.py` when PayPal status remains `CREATED` or `PAYER_ACTION_REQUIRED`.
+- Formatted `order.ship_to` in `jobs.format_ship_to` so seller WhatsApp notifications
+  receive a clean postal address instead of a raw Python dict string.
+- Updated `Receipt` to show `carrier` and `tracking_number`, connected `AiBuyer` MCP
+  tool trace events to the `Playground` activity panel, reused active manual playground
+  sessions across quotes, switched `StorePage` to `useParams()`, decoupled product and
+  order pagination in `SellerDashboard`, added `make demo-reset` to `Makefile`, and
+  documented example calls for all four MCP tools in `docs/MCP.md`.
+- External provider credentials, staging deployments and roadmap review gates remain
+  unaccepted until real provider and staging evidence is recorded.
+
+
+## Pilot-ready Should features (S-1 through S-6) and Phase B verification tooling
+
+Per explicit user instruction to complete all remaining codebase tasks while keeping API keys as placeholders:
+- **S-1 Seller Copilot (`backend/app/copilot.py`, `backend/app/routes/sellers.py`, `backend/app/whatsapp_workflow.py`, `frontend/src/Seller.tsx`)**: Implemented 7-day sales & low-stock summaries (`GET /api/me/copilot/summary` and WhatsApp `summary`), seller-confirmed PayPal capture refunds (`POST /api/me/orders/{id}/refund` -> `POST /v2/payments/captures/{id}/refund` and WhatsApp `refund #<order> confirm`), and custom order PayPal Invoicing (`POST /api/me/copilot/invoices` -> `POST /v2/invoicing/invoices` + `/send` and WhatsApp `invoice <email> <amount> <note>`).
+- **S-2 PayPal Catalog Products API (`backend/app/paypal.py`, `backend/app/routes/sellers.py`, `frontend/src/Seller.tsx`)**: Added `paypal.sync_catalog_product` (`POST /v1/catalogs/products`) and `POST /api/me/products/{id}/paypal-catalog` so live AgentShelf products can be mirrored to PayPal's catalog.
+- **S-3 WhatsApp Voice Note Transcription (`backend/app/whatsapp.py`, `backend/app/llm.py`, `backend/app/whatsapp_workflow.py`)**: Added bounded audio download (`whatsapp.download_audio` from `lookaside.fbsbx.com`) and `llm.transcribe_voice_note` so seller voice notes are transcribed and merged into product listing drafts.
+- **S-4 Agent Discovery Metadata (`backend/app/main.py`, `frontend/src/App.tsx`)**: Exposed `GET /.well-known/mcp.json`, `GET /api/stores/{slug}/schema.json`, and embedded `<script type="application/ld+json">` (`schema.org` `ItemList`/`Product`/`Offer`) on public storefront pages.
+- **S-5 Third-Party MCP Client Config (`evals/mcp_client_config.json`, `docs/MCP.md`)**: Added a ready-to-import MCP client configuration template for Claude Desktop, Cursor, and MCP Inspector.
+- **S-6 Multi-Language Listing Translation (`backend/app/llm.py`, `backend/app/main.py`, `frontend/src/App.tsx`)**: Added `GET /api/products/{id}/translate?lang=...` and storefront language selector (`en`, `es`, `fr`, `de`, `hi`, `ja`) that translates product titles and descriptions while keeping server-side USD prices, currency, and stock availability authoritative from PostgreSQL.
+- **Phase B Tooling & Submission Package (`backend/verify_phase_b.py`, `.github/workflows/nightly-sandbox.yml`, `docs/DEVPOST_SUBMISSION.md`, `README.md`)**: Added credential-readiness preflight, ADR-001 Sandbox payee spike CLI, nightly sandbox verification workflow, Devpost submission text + 2:58 video shot-list guide, and 9-section README. All external provider, staging, and merchant eligibility gates remain unaccepted (`gate_approval: False`) until real credentials and staging acceptance evidence are recorded.
+
+## Gemini AI provider support and initial local provider connectivity checks
+
+- Added `GEMINI_API_KEY` and `GEMINI_MODEL` (`gemini-3.5-flash` / `gemini-flash-latest`) support alongside `ANTHROPIC_API_KEY` across all five AI boundaries (`draft_listing`, `buyer_turn`, `analytics_summary`, `transcribe_voice_note`, `translate_listing`) in `backend/app/llm.py`, `backend/app/config.py`, `backend/app/routes/playground.py`, `backend/app/listing_workflow.py`, `backend/evaluate_listings.py`, `backend/verify_phase_b.py`, and `render.yaml`.
+- Verified local provider connectivity from gitignored `.env`:
+  - PayPal Sandbox OAuth (`api-m.sandbox.paypal.com`) and ADR-001 custom payee order creation (`verify_phase_b.py adr001-create` created order `9T102676VX188961D` with `payee_matches_requested_seller: true` and `provider_status: PAYER_ACTION_REQUIRED`; buyer approval and capture webhook remain open).
+  - Google Gemini API (`gemini-3.5-flash`) live structured JSON translation and generation.
+  - Cloudflare R2 (`agentshelf-media`) live `put_object` / `get_object` / `delete_object` roundtrip.
+  - Meta WhatsApp Cloud API (`GET /v21.0/1359067790627303` returning `200 OK` for `+1 711-932-5870 AgentShelf`).
+- Hosted staging deployment, webhook registration (`PAYPAL_WEBHOOK_ID` and WhatsApp webhook callback), end-to-end buyer-approved capture verification, 20-item human quality evaluation, and Gates 1, 2, and 3 remain unaccepted (`gate_approval: False`).

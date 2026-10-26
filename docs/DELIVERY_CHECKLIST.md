@@ -34,13 +34,15 @@ Source roadmap acceptance and independent release gates remain separate.
 - [x] Fifteen-task sandbox buyer runner/scorer with human payment steps and task/review templates; controlled protocol tests pass. Real task success remains pending.
 - [x] Confirmed checkout SSE now emits done after session cleanup; actual HTTP/MCP/PG17 regression verified.
 - [x] External API/database uptime probe, sanitized failure evidence, inactive scheduled workflow and 14 operations tests; local database outage detected.
-
 - [x] Bounded JSON/MCP bodies, verified lost-order correlation and auditable dry-run retention tools.
 - [x] October 11 full local suite: 190 backend tests, 13 development and 12 packaged browser tests, PostgreSQL 17 restore and no migration drift.
 - [x] Smaller optional monitoring SDK and packaged dist workflows, including missing-licence gate.
 - [x] Operator confirmation/error/retry/denial/mobile browser checks and retention/R2 regression cases.
 - [x] Recovered local Docker: fresh image, non-root API, worker heartbeat, gzip/cache/auth smoke checks.
 - [x] Local mobile storefront: performance 91, accessibility 100, LCP 2.0 seconds.
+- [x] Phase A codebase review remediations (proxy IP isolation, PayPal hostname validation, decoupled chat PII filter, 15-minute unapproved checkout reservation expiry, formatted WhatsApp address notifications, receipt tracking display, Playground MCP trace wiring, `useParams()` storefront routing, split dashboard pagination, `make demo-reset`).
+- [x] Phase B verification CLI (`backend/verify_phase_b.py`, `make phase-b-preflight`), nightly sandbox workflow (`.github/workflows/nightly-sandbox.yml`), Devpost submission & demo video script (`docs/DEVPOST_SUBMISSION.md`), and 9-section `README.md`.
+- [x] Local implementation of Should features S-1 through S-6 (Seller Copilot summaries/refunds/invoicing, PayPal Catalog Products mirror, WhatsApp voice-note transcription, `/.well-known/mcp.json` + `schema.org` JSON-LD discovery metadata, `evals/mcp_client_config.json`, and multi-language listing copy translation with authoritative server pricing).
 
 ## Required before full Must and pilot acceptance
 
@@ -63,7 +65,7 @@ Source roadmap acceptance and independent release gates remain separate.
 
 ## Release and live pilot
 
-- [ ] Should features after Gate 2 only, in source order.
+- [ ] Should features staged acceptance after Gate 2 signoff.
 - [ ] Final judge credentials/public links, walkthrough video, evaluation and runbook drills.
 - [ ] Team review, Devpost draft, Gate 3 signoff and independent link verification.
 - [ ] Merchant-specific live eligibility/permissions/policies and separate live app/database/storage.
