@@ -34,6 +34,23 @@ def caption_text(value):
     return value
 
 
+def chat_text(value):
+    if len(value) > 600:
+        raise DomainError("INVALID_CAPTION", "Use a message of 600 characters or fewer.")
+    value = safe_text(value, 600)
+    if re.search(
+        r"[\w.+-]+@[\w.-]+|\b(?:\+?\d[\d ()-]{7,}\d)\b|"
+        r"\b(postcode|postal code|api[_ -]?key)\b|"
+        r"\b\d+\s+\w+\s+(street|road|avenue|lane|drive)\b",
+        value,
+        re.I,
+    ):
+        raise DomainError(
+            "PERSONAL_CAPTION", "Remove contact, address and secret details from the caption."
+        )
+    return value
+
+
 def upload(seller_id, raw, asset_id=None):
     clean = preprocess_image(raw)
     asset_id = asset_id or uuid.uuid4()
@@ -67,7 +84,7 @@ def create(seller_id, media_ids, caption, request_id=None, phone=None):
     caption = caption_text(caption)
     if not 1 <= len(media_ids) <= 4 or len(set(media_ids)) != len(media_ids):
         raise DomainError("INVALID_MEDIA", "Select one to four different product images.")
-    if not get_settings().anthropic_api_key:
+    if not llm.ai_configured():
         raise DomainError(
             "AI_NOT_CONFIGURED", "AI is not configured. Create a manual draft instead.", 503
         )

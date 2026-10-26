@@ -64,7 +64,7 @@ class Observation(Input):
 class Run(Input):
     version: Literal[1] = 1
     dataset_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
-    provider: Literal["anthropic"] = "anthropic"
+    provider: Literal["anthropic", "gemini"] = "anthropic"
     model: str = Field(pattern=r"^[a-zA-Z0-9._:/-]{1,120}$")
     started_at: datetime
     image_sha256: dict[str, list[str]]
@@ -129,9 +129,11 @@ def prepare_images(dataset, directory):
 
 def run_dataset(dataset, dataset_hash, directory):
     settings = get_settings()
-    if not settings.anthropic_api_key:
-        raise DomainError("AI_NOT_CONFIGURED", "Configure real Anthropic access to evaluate.", 503)
-    if not re.fullmatch(r"[a-zA-Z0-9._:/-]{1,120}", settings.anthropic_model):
+    if not llm.ai_configured(settings):
+        raise DomainError("AI_NOT_CONFIGURED", "Configure real AI access to evaluate.", 503)
+    use_gemini = bool(settings.gemini_api_key and not settings.anthropic_api_key)
+    active_model = settings.gemini_model if use_gemini else settings.anthropic_model
+    if not re.fullmatch(r"[a-zA-Z0-9._:/-]{1,120}", active_model):
         raise ValueError("MODEL_INVALID")
     images, fingerprints = prepare_images(dataset, directory)
     observations = []
@@ -159,7 +161,8 @@ def run_dataset(dataset, dataset_hash, directory):
         )
     return Run(
         dataset_sha256=dataset_hash,
-        model=settings.anthropic_model,
+        provider="gemini" if use_gemini else "anthropic",
+        model=active_model,
         started_at=started_at,
         image_sha256=fingerprints,
         observations=observations,

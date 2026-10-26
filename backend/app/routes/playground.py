@@ -6,8 +6,7 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
-from app import buyer_agent
-from app.config import get_settings
+from app import buyer_agent, llm
 from app.errors import DomainError
 
 router = APIRouter()
@@ -23,7 +22,7 @@ class ChatInput(BaseModel):
 
 @router.post("/api/playground/chat")
 async def chat(body: ChatInput):
-    if not get_settings().anthropic_api_key and not body.confirmed_quote_id:
+    if not llm.ai_configured() and not body.confirmed_quote_id:
         raise DomainError(
             "AI_NOT_CONFIGURED", "AI chat is unavailable. Use the catalog explorer.", 503
         )

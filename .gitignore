@@ -13,6 +13,7 @@ coverage/
 test-results/
 playwright-report/
 work/
+artifacts/
 evals/private/
 *.log
 .DS_Store

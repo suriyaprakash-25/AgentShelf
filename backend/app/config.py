@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     live_merchant_id: str | None = None
     anthropic_api_key: SecretStr | None = None
     anthropic_model: str = "claude-sonnet-4-5"
+    gemini_api_key: SecretStr | None = None
+    gemini_model: str = "gemini-flash-latest"
     whatsapp_app_secret: SecretStr | None = None
     whatsapp_verify_token: SecretStr | None = None
     whatsapp_access_token: SecretStr | None = None
