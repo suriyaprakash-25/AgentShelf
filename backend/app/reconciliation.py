@@ -49,6 +49,12 @@ def reconcile(order_id):
             orders.transition(
                 db, order, "expire" if order.reserved_until <= utcnow() else "cancel", "reconciler"
             )
+        elif (
+            order.status == "checkout_created"
+            and order.reserved_until <= utcnow()
+            and data.get("status") in {"CREATED", "PAYER_ACTION_REQUIRED"}
+        ):
+            orders.transition(db, order, "expire", "reconciler")
         elif order.status == "approved" and data.get("status") == "APPROVED":
             if order.updated_at < utcnow() - timedelta(hours=6):
                 order.reconciliation_error = "CAPTURE_WINDOW_REVIEW"

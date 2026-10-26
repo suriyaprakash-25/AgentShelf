@@ -69,3 +69,18 @@ def test_locked_job_is_skipped_and_other_job_can_complete(db_clean, monkeypatch)
     with session_factory() as db:
         assert all(job.status == "done" for job in db.scalars(select(Job)))
     assert jobs.run_one() is False
+
+
+def test_format_ship_to_renders_clean_postal_string():
+    ship_to = {
+        "name": {"full_name": "Ada Lovelace"},
+        "address": {
+            "address_line_1": "10 Downing Street",
+            "admin_area_2": "London",
+            "postal_code": "SW1A 2AA",
+            "country_code": "GB",
+        },
+    }
+    formatted = jobs.format_ship_to(ship_to)
+    assert formatted == "Ada Lovelace, 10 Downing Street, London, SW1A 2AA, GB"
+    assert "{" not in formatted

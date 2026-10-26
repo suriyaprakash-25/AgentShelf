@@ -6,9 +6,20 @@ from datetime import timedelta
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 
+from app.config import get_settings
 from app.db import session_factory
 from app.errors import DomainError
 from app.models import RateBucket, utcnow
+
+
+def client_ip(request):
+    """Extract client IP; trust X-Forwarded-For only in deployed proxy environments."""
+    if get_settings().app_env in {"staging", "production"}:
+        forwarded = request.headers.get("x-forwarded-for", "")
+        hops = [part.strip() for part in forwarded.split(",") if part.strip()]
+        if hops:
+            return hops[0]
+    return request.client.host if request.client and request.client.host else "unknown"
 
 
 def consume_ip(ip, scope, limit=60, window_seconds=60):

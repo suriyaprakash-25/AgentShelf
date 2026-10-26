@@ -10,7 +10,7 @@ from sqlalchemy import func, select
 from app import auth, llm, rate_limits
 from app.db import session_factory
 from app.errors import DomainError
-from app.listing_workflow import caption_text
+from app.listing_workflow import chat_text
 from app.models import Order, Product
 
 router = APIRouter()
@@ -61,7 +61,7 @@ class AnalystInput(BaseModel):
 async def chat(body: AnalystInput, request: Request, response: Response):
     seller_id, _ = auth.seller_access(request, write=True)
     response.headers["Cache-Control"] = "no-store"
-    message = caption_text(body.message)
+    message = chat_text(body.message)
     await asyncio.to_thread(rate_limits.consume_ip, str(seller_id), "studio_analyst", 20)
     facts = await asyncio.to_thread(summary, seller_id)
     try:

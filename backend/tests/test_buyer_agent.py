@@ -173,6 +173,11 @@ def test_chat_missing_provider_and_personal_input_are_safe(db_clean, monkeypatch
         assert (
             response.status_code == 503 and response.json()["error"]["code"] == "AI_NOT_CONFIGURED"
         )
+    state = buyer_agent.acquire(
+        uuid.UUID(session), "Find me a handmade silk scarf under $60, ship to London", None
+    )
+    assert "ship to London" in state["message"]
+    buyer_agent.finish(uuid.UUID(session), state, [], None)
     with pytest.raises(DomainError) as error:
         buyer_agent.acquire(uuid.UUID(session), "Ship to 123 Main Street", None)
     assert error.value.code == "PERSONAL_CAPTION"

@@ -227,3 +227,15 @@ def test_untrusted_origin_cannot_request_or_redeem_links(db_clean, delivery):
             == 403
         )
         assert delivery == []
+
+
+def test_forwarded_ip_isolated_per_client_in_deployed_proxy_mode(db_clean, delivery, monkeypatch):
+    monkeypatch.setattr(get_settings(), "app_env", "staging")
+    with TestClient(create_app(), base_url="https://testserver") as client:
+        for i in range(4):
+            res = client.post(
+                "/api/auth/request-link",
+                headers={**ORIGIN, "x-forwarded-for": f"203.0.113.{10 + i}, 10.0.0.1"},
+                json={"email": f"seller{i}@example.invalid"},
+            )
+            assert res.status_code == 202

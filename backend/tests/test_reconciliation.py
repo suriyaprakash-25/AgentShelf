@@ -48,17 +48,24 @@ def test_capture_uncertainty_keeps_durable_intent_and_reconciles_once(
 
 
 @pytest.mark.parametrize(
-    "provider_status,expected_stock,expected_state",
-    [("CREATED", 0, "checkout_created"), ("VOIDED", 1, "expired")],
+    "provider_status,expired_window,expected_stock,expected_state",
+    [
+        ("CREATED", False, 0, "checkout_created"),
+        ("CREATED", True, 1, "expired"),
+        ("PAYER_ACTION_REQUIRED", True, 1, "expired"),
+        ("VOIDED", True, 1, "expired"),
+    ],
 )
-def test_expiry_requires_definitive_provider_terminal_state(
-    db_clean, provider, monkeypatch, provider_status, expected_stock, expected_state
+def test_unapproved_reservation_expires_after_fifteen_minute_window(
+    db_clean, provider, monkeypatch, provider_status, expired_window, expected_stock, expected_state
 ):
     order_id, _, paypal_id, data = checkout(provider)
     data["status"] = provider_status
     monkeypatch.setattr(paypal, "read_order", lambda _: data)
     with session_factory() as db, db.begin():
-        db.get(Order, order_id).reserved_until = utcnow() - timedelta(minutes=1)
+        db.get(Order, order_id).reserved_until = utcnow() + (
+            timedelta(minutes=-1) if expired_window else timedelta(minutes=10)
+        )
     reconciliation.reconcile(order_id)
     reconciliation.reconcile(order_id)
     with session_factory() as db:

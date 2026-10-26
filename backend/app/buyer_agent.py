@@ -15,13 +15,13 @@ from app.config import get_settings
 from app.db import session_factory
 from app.errors import DomainError
 from app.guards import parse_id
-from app.listing_workflow import caption_text
+from app.listing_workflow import caption_text, chat_text
 from app.models import AgentSession, Quote, RateBucket, utcnow
 
 
 def acquire(session_id, message, confirmation):
     # No buyer address, credentials or contact information is sent to the model.
-    message = caption_text(message)
+    message = chat_text(message)
     token = uuid.uuid4()
     with session_factory() as db, db.begin():
         session = db.scalar(

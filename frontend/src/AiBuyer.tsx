@@ -16,10 +16,12 @@ export function AiBuyer({
   budget,
   country,
   capabilities,
+  onTrace,
 }: {
   budget: string;
   country: string;
   capabilities: Capabilities | null;
+  onTrace?: (line: string) => void;
 }) {
   const [session, setSession] = useState("");
   const [message, setMessage] = useState("");
@@ -75,8 +77,14 @@ export function AiBuyer({
               ...items,
               { from: "Agent", text: String(event.text) },
             ]);
-          if (event.type === "tool_call" || event.type === "tool_result")
+          if (event.type === "tool_call" || event.type === "tool_result") {
             setTrace((items) => [...items.slice(-39), event]);
+            onTrace?.(
+              `${event.type}: ${String(event.name ?? "")} ${JSON.stringify(
+                event.arguments ?? event.result ?? {},
+              )}`,
+            );
+          }
           if (event.type === "quote") setQuote(event as unknown as Review);
           if (event.type === "error")
             setError((event.error as { message: string }).message);
@@ -84,9 +92,12 @@ export function AiBuyer({
             const url = new URL(String(event.approval_url));
             if (
               url.protocol !== "https:" ||
-              !["www.sandbox.paypal.com", "www.paypal.com"].includes(
-                url.hostname,
-              ) ||
+              ![
+                "www.sandbox.paypal.com",
+                "sandbox.paypal.com",
+                "www.paypal.com",
+                "paypal.com",
+              ].includes(url.hostname) ||
               url.username ||
               url.password
             )

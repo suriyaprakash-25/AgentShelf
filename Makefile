@@ -1,4 +1,4 @@
-.PHONY: setup db migrate seed api worker web test
+.PHONY: setup db migrate seed demo-reset phase-b-preflight api worker web test
 setup:
 	cd backend && uv sync --frozen
 	cd frontend && npm ci
@@ -8,6 +8,11 @@ migrate:
 	cd backend && uv run --env-file ../.env alembic upgrade head
 seed:
 	cd backend && uv run --env-file ../.env python seed.py
+demo-reset:
+	cd backend && uv run --env-file ../.env python seed.py
+	cd backend && uv run --env-file ../.env python maintenance.py demo-reset --confirm RESET_SYNTHETIC_SANDBOX_STOCK
+phase-b-preflight:
+	cd backend && uv run --env-file ../.env python verify_phase_b.py preflight
 api:
 	cd backend && uv run --env-file ../.env uvicorn app.main:app --host 127.0.0.1 --port 8000
 worker:

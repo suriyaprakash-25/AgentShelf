@@ -50,6 +50,26 @@ def process_paypal(db, job):
     event.processed_at = utcnow()
 
 
+def format_ship_to(ship_to):
+    if not isinstance(ship_to, dict):
+        return "Address on file in Seller Dashboard"
+    name = (
+        ship_to.get("name", {}).get("full_name") if isinstance(ship_to.get("name"), dict) else None
+    )
+    address = ship_to.get("address") if isinstance(ship_to.get("address"), dict) else {}
+    parts = [
+        name,
+        address.get("address_line_1"),
+        address.get("address_line_2"),
+        address.get("admin_area_2"),
+        address.get("admin_area_1"),
+        address.get("postal_code"),
+        address.get("country_code"),
+    ]
+    formatted = ", ".join(str(part).strip() for part in parts if part and str(part).strip())
+    return formatted or "Address on file in Seller Dashboard"
+
+
 def process_notification(db, job):
     """Only send paid alerts once a verified completed capture webhook is present."""
     from app.guards import parse_id
@@ -78,7 +98,7 @@ def process_notification(db, job):
         str(order.id)[:8],
         f"{quote.title} x{quote.qty}",
         f"{paypal.money(order.amount_minor)} {order.currency}",
-        str(order.ship_to),
+        format_ship_to(order.ship_to),
     )
 
 
