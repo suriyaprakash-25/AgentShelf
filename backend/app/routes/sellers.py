@@ -6,7 +6,7 @@ from fastapi import APIRouter, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 
-from app import auth, tracking
+from app import auth, copilot, paypal, rate_limits, tracking
 from app.config import get_settings
 from app.db import session_factory
 from app.errors import DomainError
@@ -75,7 +75,7 @@ def require_origin(request):
 @router.post("/api/auth/request-link", status_code=202)
 def request_link(body: LinkInput, request: Request):
     require_origin(request)
-    return auth.request_link(body.email, None, request.client.host)
+    return auth.request_link(body.email, None, rate_limits.client_ip(request))
 
 
 @router.post("/api/onboarding", status_code=202)
@@ -88,7 +88,7 @@ def onboard(body: OnboardingInput, request: Request):
         "country": body.country,
         "paypal_email": body.paypal_email.lower(),
     }
-    return auth.request_link(body.email, profile, request.client.host)
+    return auth.request_link(body.email, profile, rate_limits.client_ip(request))
 
 
 class RedeemInput(Input):
@@ -271,6 +271,55 @@ def archive(product_id: uuid.UUID, request: Request):
         product = owned_product(db, product_id, seller_id)
         product.status = "archived"
         return product_json(product)
+
+
+@router.post("/api/me/products/{product_id}/paypal-catalog")
+def mirror_paypal_catalog(product_id: uuid.UUID, request: Request):
+    """Mirror a published seller product to the PayPal Catalog Products API (S-2)."""
+    seller_id, _ = auth.seller_access(request, write=True)
+    with session_factory() as db:
+        product = db.scalar(
+            select(Product).where(Product.id == product_id, Product.seller_id == seller_id)
+        )
+        if not product or product.status != "live":
+            raise DomainError("PRODUCT_NOT_FOUND", "Publish this product before mirroring.", 404)
+    return paypal.sync_catalog_product(product)
+
+
+class RefundInput(Input):
+    confirm: bool
+
+
+@router.get("/api/me/copilot/summary")
+def copilot_summary(request: Request, response: Response):
+    """Return a 7-day seller transaction summary for the Seller Copilot (S-1)."""
+    seller_id, _ = auth.seller_access(request)
+    response.headers["Cache-Control"] = "no-store"
+    with session_factory() as db:
+        return copilot.weekly_summary(db, seller_id)
+
+
+@router.post("/api/me/orders/{order_id}/refund")
+def copilot_refund(order_id: uuid.UUID, body: RefundInput, request: Request):
+    """Issue a verified PayPal capture refund for a seller-owned order (S-1)."""
+    seller_id, _ = auth.seller_access(request, write=True)
+    return copilot.issue_refund(seller_id, str(order_id), confirm=body.confirm)
+
+
+class InvoiceInput(Input):
+    recipient_email: str = Field(min_length=3, max_length=254, pattern=EMAIL_PATTERN)
+    amount_minor: int = Field(strict=True, ge=1, le=100_000_000)
+    note: str = Field(default="Thank you for your order.", max_length=400)
+    confirm: bool
+
+
+@router.post("/api/me/copilot/invoices")
+def copilot_invoice(body: InvoiceInput, request: Request):
+    """Create and send a PayPal invoice for the authenticated seller (S-1)."""
+    seller_id, _ = auth.seller_access(request, write=True)
+    return copilot.send_invoice(
+        seller_id, body.recipient_email, body.amount_minor, body.note, confirm=body.confirm
+    )
 
 
 @router.get("/api/me/orders")

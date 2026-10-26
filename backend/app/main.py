@@ -19,13 +19,13 @@ from sqlalchemy.exc import SQLAlchemyError
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.gzip import GZipMiddleware
 
-from app import observability, orders, quotes, rate_limits
+from app import llm, observability, orders, quotes, rate_limits
 from app.body_limits import BodySizeLimitMiddleware
 from app.config import get_settings, parse_browser_sentry_dsn
 from app.db import get_engine, session_factory
 from app.errors import DomainError
 from app.mcp_server import create_mcp_server
-from app.models import AgentSession, Seller
+from app.models import AgentSession, Product, Seller
 from app.routes.analytics import router as analytics_router
 from app.routes.listings import router as listings_router
 from app.routes.operations import router as operations_router
@@ -45,7 +45,7 @@ async def request_context(request, call_next):
     """Attach a request ID, limit local pilot traffic and add browser security headers."""
     request_id = str(uuid.uuid4())
     request.state.request_id = request_id
-    ip = request.client.host if request.client else "unknown"
+    ip = rate_limits.client_ip(request)
     try:
         if request.url.path.startswith(("/mcp", "/api/playground")) and request.method != "OPTIONS":
             scope = "mcp" if request.url.path.startswith("/mcp") else "playground"
@@ -127,6 +127,26 @@ def healthz():
         return JSONResponse({"status": "unavailable", "database": "unreachable"}, status_code=503)
 
 
+@router.get("/.well-known/mcp.json")
+def mcp_discovery():
+    """Publish MCP Streamable HTTP endpoint and tool metadata for agent crawlers."""
+    return {
+        "schema_version": "2025-11-25",
+        "name": "AgentShelf",
+        "description": "WhatsApp-seeded merchant catalog with PayPal Orders v2 checkout.",
+        "transport": {
+            "type": "streamable-http",
+            "endpoint": settings.public_api_url + "/mcp",
+        },
+        "tools": [
+            "search_products",
+            "get_quote",
+            "create_checkout",
+            "get_order_status",
+        ],
+    }
+
+
 @router.get("/api/monitoring-config")
 def monitoring_config():
     """Expose only the opt-in public browser DSN, never server/provider secrets."""
@@ -142,7 +162,7 @@ def capabilities():
     return {
         "paypal_mode": settings.paypal_mode,
         "checkout_configured": bool(settings.paypal_client_id and settings.paypal_client_secret),
-        "ai_configured": bool(settings.anthropic_api_key),
+        "ai_configured": llm.ai_configured(settings),
         "whatsapp_configured": bool(
             settings.whatsapp_access_token and settings.whatsapp_phone_number_id
         ),
@@ -174,6 +194,47 @@ def store(slug: str, after: uuid.UUID | None = None):
         }
 
 
+@router.get("/api/stores/{slug}/schema.json")
+def store_schema(slug: str):
+    """Return schema.org Product JSON-LD for a public merchant storefront."""
+    with session_factory() as db:
+        seller = db.scalar(
+            select(Seller).where(Seller.store_slug == slug, Seller.status == "active")
+        )
+        if not seller:
+            raise DomainError("STORE_NOT_FOUND", "This store is unavailable.", 404)
+        items = quotes.search_products(db, limit=10, store_slug=slug)
+        return {
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            "name": seller.name,
+            "url": f"{settings.frontend_url}/s/{seller.store_slug}",
+            "itemListElement": [
+                {
+                    "@type": "ListItem",
+                    "position": idx + 1,
+                    "item": {
+                        "@type": "Product",
+                        "sku": item["product_id"],
+                        "name": item["title"],
+                        "description": item["description"],
+                        "offers": {
+                            "@type": "Offer",
+                            "price": item["price"],
+                            "priceCurrency": item["currency"],
+                            "availability": (
+                                "https://schema.org/InStock"
+                                if item["in_stock"]
+                                else "https://schema.org/OutOfStock"
+                            ),
+                        },
+                    },
+                }
+                for idx, item in enumerate(items)
+            ],
+        }
+
+
 @router.get("/api/products")
 def products(
     query: str = "",
@@ -189,6 +250,33 @@ def products(
         return {
             "products": items,
             "next_cursor": items[-1]["product_id"] if len(items) == limit else None,
+        }
+
+
+@router.get("/api/products/{product_id}/translate")
+def translate_product(product_id: uuid.UUID, lang: str = "es"):
+    """Translate listing copy while keeping server-side price, currency and stock authoritative."""
+    with session_factory() as db:
+        row = db.execute(
+            select(Product, Seller)
+            .join(Seller, Seller.id == Product.seller_id)
+            .where(
+                Product.id == product_id,
+                Product.status == "live",
+                Seller.status == "active",
+            )
+        ).first()
+        if not row:
+            raise DomainError("PRODUCT_NOT_FOUND", "Product is unavailable.", 404)
+        product, seller = row
+        translated = llm.translate_listing(product.title, product.description, lang)
+        serialized = quotes.product_json(product, seller)
+        return {
+            **serialized,
+            "title": translated["title"],
+            "description": translated["description"],
+            "language": translated["language"],
+            "source_title": product.title,
         }
 
 

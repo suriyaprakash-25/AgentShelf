@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "agentshelf-local": {
+      "transport": "streamable-http",
+      "url": "http://localhost:8000/mcp",
+      "description": "AgentShelf local MCP server (search_products, get_quote, create_checkout, get_order_status)"
+    },
+    "agentshelf-staging": {
+      "transport": "streamable-http",
+      "url": "https://<public-api-domain>/mcp",
+      "description": "Replace <public-api-domain> with your deployed PUBLIC_API_URL host for Claude Desktop, Cursor, or MCP Inspector"
+    }
+  }
+}

@@ -58,6 +58,13 @@ type Order = {
   currency: string;
   created_at: string;
 };
+type CopilotSummary = {
+  summary: string;
+  paid_or_shipped_orders: number;
+  gross_paid_minor: number;
+  refunded_orders: number;
+  refunded_minor: number;
+};
 const productColumns: ColDef<Product>[] = [
   { field: "title", flex: 2 },
   {
@@ -121,26 +128,38 @@ export function SellerDashboard() {
   const [me, setMe] = useState<Me | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [page, setPage] = useState(1);
+  const [productPage, setProductPage] = useState(1);
+  const [orderPage, setOrderPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [orderTotal, setOrderTotal] = useState(0);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [copilotSummary, setCopilotSummary] = useState<CopilotSummary | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const productGrid = useRef<AgGridReact<Product>>(null);
   const orderGrid = useRef<AgGridReact<Order>>(null);
   const initial = useRef(false);
-  async function load(currentPage = page) {
+  async function load(
+    currentProductPage = productPage,
+    currentOrderPage = orderPage,
+  ) {
     const owner = await api<Me>("/api/me");
     setMe(owner);
     const [catalog, purchases] = await Promise.all([
       api<{ items: Product[]; total: number }>(
-        `/api/me/products?page=${currentPage}`,
+        `/api/me/products?page=${currentProductPage}`,
       ),
-      api<{ items: Order[] }>(`/api/me/orders?page=${currentPage}`),
+      api<{ items: Order[]; total?: number }>(
+        `/api/me/orders?page=${currentOrderPage}`,
+      ),
     ]);
     setProducts(catalog.items);
     setTotal(catalog.total);
     setOrders(purchases.items);
+    setOrderTotal(purchases.total ?? purchases.items.length);
   }
   useEffect(() => {
     if (initial.current) return;
@@ -152,7 +171,7 @@ export function SellerDashboard() {
     (async () => {
       try {
         if (token) await api("/api/auth/redeem", { token });
-        await load(1);
+        await load(1, 1);
       } catch (e) {
         setError((e as Error).message);
       } finally {
@@ -166,6 +185,7 @@ export function SellerDashboard() {
     if (!me) return;
     setBusy(true);
     setError("");
+    setNotice("");
     try {
       await api(path, body, undefined, { method, csrf: me.csrf_token });
       await load();
@@ -186,11 +206,66 @@ export function SellerDashboard() {
       stock: Number(data.get("stock")),
     });
   }
-  async function move(next: number) {
+  async function loadCopilotSummary() {
+    setBusy(true);
+    setError("");
+    try {
+      setCopilotSummary(await api<CopilotSummary>("/api/me/copilot/summary"));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function sendCopilotInvoice(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!me) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    const data = new FormData(event.currentTarget);
+    try {
+      const result = await api<{
+        invoice_id: string;
+        amount: string;
+        currency: string;
+      }>(
+        "/api/me/copilot/invoices",
+        {
+          recipient_email: data.get("recipient_email"),
+          amount_minor: Math.round(Number(data.get("amount")) * 100),
+          note: data.get("note"),
+          confirm: true,
+        },
+        undefined,
+        { csrf: me.csrf_token },
+      );
+      setNotice(
+        `PayPal invoice ${result.invoice_id} sent (${result.amount} ${result.currency}).`,
+      );
+      event.currentTarget.reset();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function moveProducts(next: number) {
     setLoading(true);
     try {
-      await load(next);
-      setPage(next);
+      await load(next, orderPage);
+      setProductPage(next);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+  async function moveOrders(next: number) {
+    setLoading(true);
+    try {
+      await load(productPage, next);
+      setOrderPage(next);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -245,6 +320,11 @@ export function SellerDashboard() {
         </button>
       </div>
       <p role="alert">{error}</p>
+      {notice && (
+        <p role="status" className="notice">
+          {notice}
+        </p>
+      )}
       <button
         className="button secondary"
         onClick={() => setShowAnalytics((v) => !v)}
@@ -263,6 +343,51 @@ export function SellerDashboard() {
           </p>
         ))}
       <ListingStudio csrf={me.csrf_token} refresh={() => load()} />
+      <div className="panel">
+        <h2>Seller Copilot</h2>
+        <p>
+          Generate a 7-day sales & stock summary or send a PayPal invoice for a
+          custom order (also available on WhatsApp via <code>summary</code>,{" "}
+          <code>invoice</code> and <code>refund #order confirm</code>).
+        </p>
+        <button
+          type="button"
+          className="button secondary"
+          disabled={busy}
+          onClick={() => void loadCopilotSummary()}
+        >
+          Generate 7-day summary
+        </button>
+        {copilotSummary && (
+          <p role="status" className="notice">
+            {copilotSummary.summary}
+          </p>
+        )}
+        <form onSubmit={sendCopilotInvoice} className="seller-form">
+          <label>
+            Buyer email
+            <input name="recipient_email" type="email" required />
+          </label>
+          <label>
+            Invoice amount (USD)
+            <input
+              name="amount"
+              type="number"
+              min="0.01"
+              max="100000"
+              step="0.01"
+              required
+            />
+          </label>
+          <label>
+            Custom order description
+            <input name="note" maxLength={240} required />
+          </label>
+          <button className="button" disabled={busy}>
+            Send PayPal invoice
+          </button>
+        </form>
+      </div>
       <div className="panel">
         <h2>Create a product draft</h2>
         <form onSubmit={create} className="seller-form">
@@ -388,6 +513,34 @@ export function SellerDashboard() {
             >
               Edit stock
             </button>
+            {p.status === "live" && (
+              <button
+                className="button secondary"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  setError("");
+                  setNotice("");
+                  try {
+                    const synced = await api<{ paypal_product_id: string }>(
+                      `/api/me/products/${p.id}/paypal-catalog`,
+                      {},
+                      undefined,
+                      { csrf: me.csrf_token },
+                    );
+                    setNotice(
+                      `Mirrored to PayPal Catalog (${synced.paypal_product_id}).`,
+                    );
+                  } catch (e) {
+                    setError((e as Error).message);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Mirror to PayPal Catalog
+              </button>
+            )}
             {p.status !== "archived" && (
               <button
                 className="text-link"
@@ -402,6 +555,25 @@ export function SellerDashboard() {
             )}
           </div>
         ))}
+      </div>
+      <div className="seller-toolbar">
+        <button
+          disabled={productPage === 1 || loading}
+          onClick={() => void moveProducts(productPage - 1)}
+        >
+          Previous products
+        </button>
+        <span>
+          Page {productPage} · {total} products
+        </span>
+        <button
+          disabled={
+            products.length < 25 || productPage * 25 >= total || loading
+          }
+          onClick={() => void moveProducts(productPage + 1)}
+        >
+          Next products
+        </button>
       </div>
       <h2>Orders — newest first</h2>
       <button
@@ -432,19 +604,21 @@ export function SellerDashboard() {
       </div>
       <div className="seller-toolbar">
         <button
-          disabled={page === 1 || loading}
-          onClick={() => void move(page - 1)}
+          disabled={orderPage === 1 || loading}
+          onClick={() => void moveOrders(orderPage - 1)}
         >
-          Previous page
+          Previous orders
         </button>
         <span>
-          Page {page} · {total} products
+          Page {orderPage} · {orderTotal} orders
         </span>
         <button
-          disabled={(products.length < 25 && orders.length < 25) || loading}
-          onClick={() => void move(page + 1)}
+          disabled={
+            orders.length < 25 || orderPage * 25 >= orderTotal || loading
+          }
+          onClick={() => void moveOrders(orderPage + 1)}
         >
-          Next page
+          Next orders
         </button>
       </div>
       <div className="seller-actions">
@@ -515,6 +689,24 @@ function Fulfilment({
       setBusy(false);
     }
   }
+  async function refundOrder() {
+    if (
+      !window.confirm(
+        `Issue a full PayPal refund for order ${order.id.slice(0, 8)}?`,
+      )
+    )
+      return;
+    setBusy(true);
+    setError("");
+    try {
+      await api(path + "/refund", { confirm: true }, undefined, { csrf });
+      await refresh();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   const address = detail?.ship_to?.address;
   return (
     <div className="panel">
@@ -576,6 +768,16 @@ function Fulfilment({
             {busy ? "Verifying tracking…" : "Send tracking to PayPal"}
           </button>
         </form>
+      )}
+      {(order.status === "paid" || order.status === "shipped") && (
+        <button
+          type="button"
+          className="text-link"
+          disabled={busy}
+          onClick={() => void refundOrder()}
+        >
+          Refund order on PayPal
+        </button>
       )}
       <p role="alert">{error}</p>
     </div>

@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from sqlalchemy import String, cast, select
 from sqlalchemy.dialects.postgresql import insert
 
-from app import auth, listing_workflow, paypal, tracking, whatsapp
+from app import auth, copilot, listing_workflow, llm, paypal, tracking, whatsapp
 from app.config import get_settings
 from app.errors import DomainError
 from app.guards import safe_text
@@ -151,9 +151,37 @@ def onboard(conversation, text, phone):
 
 def command(db, conversation, seller, message, text):
     context = dict(conversation.context)
+    if message.get("type") in {"audio", "voice"}:
+        audio = message.get("audio") or message.get("voice") or {}
+        raw_audio = whatsapp.download_audio(audio.get("id"))
+        mime = audio.get("mime_type") or "audio/ogg"
+        transcript = listing_workflow.caption_text(llm.transcribe_voice_note(raw_audio, mime))
+        if conversation.state == "awaiting_draft" and context.get("listing_id"):
+            pending = db.scalar(
+                select(ListingRequest)
+                .where(
+                    ListingRequest.id == uuid.UUID(context["listing_id"]),
+                    ListingRequest.seller_id == seller.id,
+                )
+                .with_for_update()
+            )
+            if pending and pending.status == "queued":
+                pending.caption = listing_workflow.caption_text(
+                    ((pending.caption or "") + " " + transcript).strip()
+                )
+                return "Voice note transcribed and added to your queued listing draft."
+        context["voice_caption"] = transcript
+        conversation.context = context
+        return (
+            "Voice note transcribed. Send one to four product photos to draft your listing "
+            "with this description."
+        )
     if message.get("type") == "image":
         image = message.get("image", {})
-        caption = listing_workflow.caption_text(image.get("caption", ""))
+        raw_caption = image.get("caption", "")
+        if context.get("voice_caption"):
+            raw_caption = (context.pop("voice_caption") + " " + raw_caption).strip()
+        caption = listing_workflow.caption_text(raw_caption)
         identifier = uuid.uuid5(uuid.NAMESPACE_URL, "agentshelf:meta:" + message["id"])
         asset = listing_workflow.upload(
             seller.id, whatsapp.download_image(image.get("id")), identifier
@@ -206,6 +234,32 @@ def command(db, conversation, seller, message, text):
             + f"MCP: {get_settings().public_api_url}/mcp. "
             + f"Dashboard: {get_settings().frontend_url}/dashboard."
         )
+    if text.lower() in {"summary", "copilot summary"}:
+        return copilot.weekly_summary(db, seller.id)["summary"]
+    refund_cmd = re.fullmatch(r"refund\s+#([0-9a-f-]{8,36})(?:\s+(confirm))?", text, re.I)
+    if refund_cmd:
+        if not refund_cmd[2]:
+            return f"Reply refund #{refund_cmd[1][:8]} confirm to issue a full PayPal refund."
+        result = copilot.issue_refund(seller.id, refund_cmd[1], confirm=True)
+        return (
+            f"Refund {result['status']} for #{result['order_id'][:8]} "
+            f"({result['amount']} {result['currency']})."
+        )
+    invoice_cmd = re.fullmatch(
+        r"invoice\s+([^\s@<>]+@[^\s@<>]+\.[^\s@<>]+)\s+(\d+(?:\.\d{1,2})?)(?:\s+(.+))?",
+        text,
+        re.I,
+    )
+    if invoice_cmd:
+        amount_minor = paypal.parse_money(invoice_cmd[2])
+        result = copilot.send_invoice(
+            seller.id,
+            invoice_cmd[1],
+            amount_minor,
+            invoice_cmd[3] or "Thank you for your order.",
+            confirm=True,
+        )
+        return f"Invoice {result['invoice_id']} sent for {result['amount']} {result['currency']}."
     if text.lower() == "orders":
         rows = db.scalars(
             select(Order)

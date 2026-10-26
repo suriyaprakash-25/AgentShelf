@@ -133,7 +133,7 @@ def create_order(order, quote, seller):
                 },
                 "items": [
                     {
-                        "name": quote.title,
+                        "name": quote.title[:127],
                         "quantity": str(quote.qty),
                         "unit_amount": {"currency_code": cur, "value": money(quote.unit_minor)},
                         "category": "PHYSICAL_GOODS",
@@ -144,7 +144,7 @@ def create_order(order, quote, seller):
         "payment_source": {
             "paypal": {
                 "experience_context": {
-                    "brand_name": seller.name,
+                    "brand_name": seller.name[:127],
                     "shipping_preference": "GET_FROM_FILE",
                     "user_action": "PAY_NOW",
                     "return_url": base + "/checkout/return",
@@ -226,3 +226,70 @@ def verify_webhook(headers, event):
         "POST", "/v1/notifications/verify-webhook-signature", body, "verify-" + str(event["id"])
     )
     return data.get("verification_status") == "SUCCESS"
+
+
+def refund_capture(capture_id: str, amount_minor: int, currency: str, request_id: str):
+    """Issue a bounded capture refund with a deterministic idempotency key."""
+    body = {
+        "amount": {
+            "value": money(amount_minor),
+            "currency_code": currency,
+        }
+    }
+    return request("POST", f"/v2/payments/captures/{capture_id}/refund", body, request_id)
+
+
+def create_and_send_invoice(
+    seller, recipient_email: str, amount_minor: int, currency: str, note: str, request_id: str
+):
+    """Create and send a PayPal invoice on behalf of the seller with idempotency keys."""
+    draft_body = {
+        "detail": {
+            "currency_code": currency,
+            "note": note[:400],
+        },
+        "invoicer": {
+            "email_address": seller.paypal_email,
+        },
+        "primary_recipients": [
+            {
+                "billing_info": {
+                    "email_address": recipient_email,
+                }
+            }
+        ],
+        "items": [
+            {
+                "name": f"{seller.name[:80]} order",
+                "quantity": "1",
+                "unit_amount": {
+                    "currency_code": currency,
+                    "value": money(amount_minor),
+                },
+            }
+        ],
+    }
+    created = request("POST", "/v2/invoicing/invoices", draft_body, "inv-create-" + request_id)
+    invoice_id = created.get("id")
+    if not isinstance(invoice_id, str) or not invoice_id:
+        raise DomainError("PAYPAL_UNAVAILABLE", "PayPal did not return an invoice ID.", 502)
+    request(
+        "POST",
+        f"/v2/invoicing/invoices/{invoice_id}/send",
+        {"send_to_invoicer": False},
+        "inv-send-" + request_id,
+    )
+    return {"invoice_id": invoice_id, "status": "SENT"}
+
+
+def sync_catalog_product(product):
+    """Mirror a live seller product to the PayPal Catalog Products API (S-2)."""
+    body = {
+        "id": str(product.id),
+        "name": product.title[:127],
+        "description": (product.description or product.title)[:256],
+        "type": "PHYSICAL",
+        "category": "MERCHANDISE",
+    }
+    data = request("POST", "/v1/catalogs/products", body, "catalog-" + str(product.id))
+    return {"paypal_product_id": data.get("id", str(product.id)), "status": "SYNCED"}

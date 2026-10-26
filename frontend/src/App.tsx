@@ -4,6 +4,7 @@ import {
   NavLink,
   Route,
   Routes,
+  useParams,
   useSearchParams,
 } from "react-router-dom";
 import {
@@ -252,10 +253,14 @@ function ProductArt({
 }
 
 function StorePage() {
-  const slug = location.pathname.split("/").pop() || "meera-jaipur";
+  const { slug = "meera-jaipur" } = useParams<{ slug: string }>();
   const [store, setStore] = useState<Store | null>(null);
   const [error, setError] = useState("");
   const [loadingMore, setLoadingMore] = useState(false);
+  const [lang, setLang] = useState("en");
+  const [translations, setTranslations] = useState<
+    Record<string, { title: string; description: string; language: string }>
+  >({});
   async function more() {
     if (!store?.next_cursor) return;
     setLoadingMore(true);
@@ -268,6 +273,24 @@ function StorePage() {
       setError((e as Error).message);
     } finally {
       setLoadingMore(false);
+    }
+  }
+  async function translateProduct(productId: string, targetLang: string) {
+    if (targetLang === "en") return;
+    try {
+      const translated = await api<{
+        title: string;
+        description: string;
+        language: string;
+      }>(
+        `/api/products/${encodeURIComponent(productId)}/translate?lang=${encodeURIComponent(targetLang)}`,
+      );
+      setTranslations((prev) => ({
+        ...prev,
+        [`${productId}:${targetLang}`]: translated,
+      }));
+    } catch (e) {
+      setError((e as Error).message);
     }
   }
   useEffect(() => {
@@ -283,8 +306,41 @@ function StorePage() {
       });
     return () => controller.abort();
   }, [slug]);
+  const jsonLd = store
+    ? {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        name: store.name,
+        itemListElement: store.products.map((p, idx) => ({
+          "@type": "ListItem",
+          position: idx + 1,
+          item: {
+            "@type": "Product",
+            sku: p.product_id,
+            name: p.title,
+            description: p.description,
+            offers: {
+              "@type": "Offer",
+              price: p.price,
+              priceCurrency: p.currency,
+              availability: p.in_stock
+                ? "https://schema.org/InStock"
+                : "https://schema.org/OutOfStock",
+            },
+          },
+        })),
+      }
+    : null;
   return (
     <div className="page">
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+          }}
+        />
+      )}
       <div className="store-heading">
         <div>
           <span className="eyebrow">THE INDEPENDENT COLLECTION</span>
@@ -294,9 +350,26 @@ function StorePage() {
             are read from the database.
           </p>
         </div>
-        <span className="pill">
-          <Globe2 size={15} /> USD · shipping to US & UK
-        </span>
+        <div className="seller-toolbar">
+          <label>
+            Language{" "}
+            <select
+              aria-label="Listing language"
+              value={lang}
+              onChange={(e) => setLang(e.target.value)}
+            >
+              <option value="en">English</option>
+              <option value="es">Español</option>
+              <option value="fr">Français</option>
+              <option value="de">Deutsch</option>
+              <option value="hi">हिन्दी</option>
+              <option value="ja">日本語</option>
+            </select>
+          </label>
+          <span className="pill">
+            <Globe2 size={15} /> USD · shipping to US & UK
+          </span>
+        </div>
       </div>
       {error && (
         <p className="notice error" role="alert">
@@ -313,42 +386,57 @@ function StorePage() {
             </p>
           )}
           <div className="product-grid">
-            {store.products.map((p, i) => (
-              <article className="product-card" key={p.product_id}>
-                {p.image_url ? (
-                  <img
-                    className="product-photo"
-                    src={p.image_url}
-                    alt={p.title}
-                    loading="lazy"
-                  />
-                ) : (
-                  <ProductArt
-                    index={i}
-                    title={p.title}
-                    demo={slug === "meera-jaipur"}
-                  />
-                )}
-                <div className="product-info">
-                  <span className="eyebrow">
-                    {store.country} / {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <h2>{p.title}</h2>
-                  <p>{p.description}</p>
-                  <div className="product-bottom">
-                    <strong>
-                      ${p.price} <small>{p.currency}</small>
-                    </strong>
-                    <Link
-                      to={`/playground?product=${p.product_id}`}
-                      aria-label={`Get a quote for ${p.title}`}
-                    >
-                      <ArrowRight size={21} />
-                    </Link>
+            {store.products.map((p, i) => {
+              const t =
+                lang !== "en" ? translations[`${p.product_id}:${lang}`] : null;
+              return (
+                <article className="product-card" key={p.product_id}>
+                  {p.image_url ? (
+                    <img
+                      className="product-photo"
+                      src={p.image_url}
+                      alt={t ? t.title : p.title}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <ProductArt
+                      index={i}
+                      title={p.title}
+                      demo={slug === "meera-jaipur"}
+                    />
+                  )}
+                  <div className="product-info">
+                    <span className="eyebrow">
+                      {store.country} / {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <h2>{t ? t.title : p.title}</h2>
+                    <p>{t ? t.description : p.description}</p>
+                    {lang !== "en" && !t && (
+                      <button
+                        type="button"
+                        className="text-link"
+                        onClick={() =>
+                          void translateProduct(p.product_id, lang)
+                        }
+                      >
+                        Translate copy ({lang.toUpperCase()})
+                      </button>
+                    )}
+                    <div className="product-bottom">
+                      <strong>
+                        ${p.price} <small>{p.currency}</small>
+                      </strong>
+                      <Link
+                        to={`/playground?product=${p.product_id}`}
+                        aria-label={`Get a quote for ${p.title}`}
+                      >
+                        <ArrowRight size={21} />
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
           {store.next_cursor && (
             <button
@@ -369,7 +457,9 @@ function StorePage() {
             <div>
               <strong>Open to shopping agents.</strong>
               <p>
-                MCP endpoint: <code>{store.mcp_url}</code>
+                MCP endpoint: <code>{store.mcp_url}</code> · Discovery:{" "}
+                <code>/.well-known/mcp.json</code> · Schema.org:{" "}
+                <code>/api/stores/{store.slug}/schema.json</code>
               </p>
             </div>
           </div>
@@ -415,20 +505,29 @@ function Playground({ capabilities }: { capabilities: Capabilities | null }) {
         throw new Error("Enter a budget with at most two decimal places.");
       const budget_minor =
         Number(parts[1]) * 100 + Number((parts[2] || "").padEnd(2, "0"));
-      const s = await api<{ session_id: string }>("/api/playground/sessions", {
-        budget_minor,
-        currency: "USD",
-      });
-      setSession(s.session_id);
+      let sessionId = session;
+      if (!sessionId) {
+        const s = await api<{ session_id: string }>(
+          "/api/playground/sessions",
+          {
+            budget_minor,
+            currency: "USD",
+          },
+        );
+        sessionId = s.session_id;
+        setSession(sessionId);
+      }
       const q = await api<Quote>("/api/quotes", {
         product_id: product.product_id,
         qty: 1,
         ship_to_country: country,
-        session_id: s.session_id,
+        session_id: sessionId,
       });
       setQuote(q);
-      setTrace([
-        `Session created with budget $${budget}.`,
+      setTrace((items) => [
+        ...(items.length
+          ? items.slice(-38)
+          : [`Session created with budget $${budget}.`]),
         `get_quote: ${JSON.stringify(q)}`,
       ]);
     } catch (e) {
@@ -451,7 +550,12 @@ function Playground({ capabilities }: { capabilities: Capabilities | null }) {
       const target = new URL(result.approval_url);
       if (
         target.protocol !== "https:" ||
-        !["www.sandbox.paypal.com", "www.paypal.com"].includes(target.hostname)
+        ![
+          "www.sandbox.paypal.com",
+          "sandbox.paypal.com",
+          "www.paypal.com",
+          "paypal.com",
+        ].includes(target.hostname)
       )
         throw new Error("The payment approval link could not be verified.");
       window.location.assign(target.href);
@@ -497,6 +601,7 @@ function Playground({ capabilities }: { capabilities: Capabilities | null }) {
                 value={budget}
                 onChange={(e) => {
                   setBudget(e.target.value);
+                  setSession("");
                   setQuote(null);
                 }}
                 inputMode="decimal"
@@ -508,6 +613,7 @@ function Playground({ capabilities }: { capabilities: Capabilities | null }) {
                 value={country}
                 onChange={(e) => {
                   setCountry(e.target.value);
+                  setSession("");
                   setQuote(null);
                 }}
               >
@@ -521,6 +627,7 @@ function Playground({ capabilities }: { capabilities: Capabilities | null }) {
             budget={budget}
             country={country}
             capabilities={capabilities}
+            onTrace={(line) => setTrace((items) => [...items.slice(-39), line])}
           />
           <label className="search-label">
             <Search size={18} />
@@ -635,6 +742,8 @@ function Receipt() {
     currency: string;
     refunded_amount: string;
     payment_review: string | null;
+    carrier?: string | null;
+    tracking_number?: string | null;
   } | null>(null);
   const [error, setError] = useState("");
   useEffect(() => {
@@ -651,6 +760,8 @@ function Receipt() {
       currency: string;
       refunded_amount: string;
       payment_review: string | null;
+      carrier?: string | null;
+      tracking_number?: string | null;
     }>(
       `/api/orders/${encodeURIComponent(id)}?session_id=${encodeURIComponent(session)}`,
       undefined,
@@ -666,7 +777,9 @@ function Receipt() {
     <div className="page narrow">
       <span className="eyebrow">YOUR ORDER</span>
       <h1>
-        {result?.status === "paid" ? "Payment confirmed." : "Order status."}
+        {result?.status === "paid" || result?.status === "shipped"
+          ? "Payment confirmed."
+          : "Order status."}
       </h1>
       {error && (
         <p role="alert" className="notice error">
@@ -681,6 +794,12 @@ function Receipt() {
           <p>
             Amount: {result.amount} {result.currency}
           </p>
+          {result.tracking_number && (
+            <p>
+              Tracking: {result.carrier ? `${result.carrier} ` : ""}
+              {result.tracking_number}
+            </p>
+          )}
           {Number(result.refunded_amount) > 0 && (
             <p>
               Confirmed refunds: {result.refunded_amount} {result.currency}
