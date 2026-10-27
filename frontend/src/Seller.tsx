@@ -297,27 +297,43 @@ export function SellerDashboard() {
     );
   return (
     <div className="page">
-      <span className="eyebrow">SELLER DASHBOARD</span>
-      <h1>{me.name}</h1>
-      <div className="seller-toolbar">
-        <Link to={`/s/${me.store_slug}`}>Open public store</Link>
-        {me.is_operator && <Link to="/operations">Operations</Link>}
-        <button
-          className="button secondary"
-          disabled={busy}
-          onClick={async () => {
-            try {
-              await api("/api/auth/logout", {}, undefined, {
-                csrf: me.csrf_token,
-              });
-              setMe(null);
-            } catch (e) {
-              setError((e as Error).message);
-            }
-          }}
-        >
-          Sign out
-        </button>
+      <div className="seller-header-bar">
+        <div>
+          <span className="eyebrow">SELLER DASHBOARD</span>
+          <h1>{me.name}</h1>
+        </div>
+        <div className="seller-toolbar">
+          <Link className="button secondary small" to={`/s/${me.store_slug}`}>
+            Open public store
+          </Link>
+          <button
+            className="button secondary small"
+            onClick={() => setShowAnalytics((v) => !v)}
+          >
+            {showAnalytics ? "Close shop analytics" : "Open shop analytics"}
+          </button>
+          {me.is_operator && (
+            <Link className="button secondary small" to="/operations">
+              Operations
+            </Link>
+          )}
+          <button
+            className="button secondary small"
+            disabled={busy}
+            onClick={async () => {
+              try {
+                await api("/api/auth/logout", {}, undefined, {
+                  csrf: me.csrf_token,
+                });
+                setMe(null);
+              } catch (e) {
+                setError((e as Error).message);
+              }
+            }}
+          >
+            Sign out
+          </button>
+        </div>
       </div>
       <p role="alert">{error}</p>
       {notice && (
@@ -325,12 +341,6 @@ export function SellerDashboard() {
           {notice}
         </p>
       )}
-      <button
-        className="button secondary"
-        onClick={() => setShowAnalytics((v) => !v)}
-      >
-        {showAnalytics ? "Close shop analytics" : "Open shop analytics"}
-      </button>
       {showAnalytics &&
         (AnalyticsStudio ? (
           <Suspense fallback={<p role="status">Loading analytics…</p>}>
@@ -342,107 +352,112 @@ export function SellerDashboard() {
             orders remain available below.
           </p>
         ))}
-      <ListingStudio csrf={me.csrf_token} refresh={() => load()} />
-      <div className="panel">
-        <h2>Seller Copilot</h2>
-        <p>
-          Generate a 7-day sales & stock summary or send a PayPal invoice for a
-          custom order (also available on WhatsApp via <code>summary</code>,{" "}
-          <code>invoice</code> and <code>refund #order confirm</code>).
-        </p>
-        <button
-          type="button"
-          className="button secondary"
-          disabled={busy}
-          onClick={() => void loadCopilotSummary()}
-        >
-          Generate 7-day summary
-        </button>
-        {copilotSummary && (
-          <p role="status" className="notice">
-            {copilotSummary.summary}
+      <div className="seller-workspace-grid">
+        <ListingStudio csrf={me.csrf_token} refresh={() => load()} />
+        <div className="panel">
+          <h2>Seller Copilot</h2>
+          <p>
+            Generate a 7-day sales & stock summary or send a PayPal invoice for
+            a custom order (also available on WhatsApp via <code>summary</code>,{" "}
+            <code>invoice</code> and <code>refund #order confirm</code>).
           </p>
-        )}
-        <form onSubmit={sendCopilotInvoice} className="seller-form">
-          <label>
-            Buyer email
-            <input name="recipient_email" type="email" required />
-          </label>
-          <label>
-            Invoice amount (USD)
-            <input
-              name="amount"
-              type="number"
-              min="0.01"
-              max="100000"
-              step="0.01"
-              required
-            />
-          </label>
-          <label>
-            Custom order description
-            <input name="note" maxLength={240} required />
-          </label>
-          <button className="button" disabled={busy}>
-            Send PayPal invoice
+          <button
+            type="button"
+            className="button secondary"
+            disabled={busy}
+            onClick={() => void loadCopilotSummary()}
+          >
+            Generate 7-day summary
           </button>
-        </form>
+          {copilotSummary && (
+            <p role="status" className="notice">
+              {copilotSummary.summary}
+            </p>
+          )}
+          <form onSubmit={sendCopilotInvoice} className="seller-form">
+            <label>
+              Buyer email
+              <input name="recipient_email" type="email" required />
+            </label>
+            <label>
+              Invoice amount (USD)
+              <input
+                name="amount"
+                type="number"
+                min="0.01"
+                max="100000"
+                step="0.01"
+                required
+              />
+            </label>
+            <label>
+              Custom order description
+              <input name="note" maxLength={240} required />
+            </label>
+            <button className="button" disabled={busy}>
+              Send PayPal invoice
+            </button>
+          </form>
+        </div>
+        <div className="panel">
+          <h2>Create a product draft</h2>
+          <form onSubmit={create} className="seller-form">
+            <label>
+              Title
+              <input name="title" maxLength={80} required />
+            </label>
+            <label>
+              Description
+              <textarea name="description" maxLength={600} required />
+            </label>
+            <label>
+              Price in USD
+              <input
+                name="price"
+                type="number"
+                min="0.01"
+                max="1000000"
+                step="0.01"
+                required
+              />
+            </label>
+            <label>
+              Available stock
+              <input
+                name="stock"
+                type="number"
+                min="0"
+                max="1000000"
+                step="1"
+                required
+              />
+            </label>
+            <button className="button" disabled={busy}>
+              Save draft
+            </button>
+          </form>
+          <p>Review your price and details before publishing.</p>
+        </div>
       </div>
-      <div className="panel">
-        <h2>Create a product draft</h2>
-        <form onSubmit={create} className="seller-form">
-          <label>
-            Title
-            <input name="title" maxLength={80} required />
-          </label>
-          <label>
-            Description
-            <textarea name="description" maxLength={600} required />
-          </label>
-          <label>
-            Price in USD
-            <input
-              name="price"
-              type="number"
-              min="0.01"
-              max="1000000"
-              step="0.01"
-              required
-            />
-          </label>
-          <label>
-            Available stock
-            <input
-              name="stock"
-              type="number"
-              min="0"
-              max="1000000"
-              step="1"
-              required
-            />
-          </label>
-          <button className="button" disabled={busy}>
-            Save draft
-          </button>
-        </form>
-        <p>Review your price and details before publishing.</p>
+      <div className="section-header">
+        <h2>Products</h2>
+        <button
+          className="button secondary small"
+          onClick={() =>
+            productGrid.current?.api.exportDataAsCsv({
+              fileName: "products-current-page.csv",
+              processCellCallback: (p) => csv(p.value),
+            })
+          }
+        >
+          Export current product page
+        </button>
       </div>
-      <h2>Products</h2>
-      <button
-        className="button secondary"
-        onClick={() =>
-          productGrid.current?.api.exportDataAsCsv({
-            fileName: "products-current-page.csv",
-            processCellCallback: (p) => csv(p.value),
-          })
-        }
-      >
-        Export current product page
-      </button>
       <div className="seller-grid">
         <AgGridReact<Product>
           ref={productGrid}
           theme={theme}
+          domLayout="autoHeight"
           rowData={products}
           columnDefs={productColumns}
           defaultColDef={{
@@ -558,6 +573,7 @@ export function SellerDashboard() {
       </div>
       <div className="seller-toolbar">
         <button
+          className="button secondary small"
           disabled={productPage === 1 || loading}
           onClick={() => void moveProducts(productPage - 1)}
         >
@@ -567,6 +583,7 @@ export function SellerDashboard() {
           Page {productPage} · {total} products
         </span>
         <button
+          className="button secondary small"
           disabled={
             products.length < 25 || productPage * 25 >= total || loading
           }
@@ -575,22 +592,25 @@ export function SellerDashboard() {
           Next products
         </button>
       </div>
-      <h2>Orders — newest first</h2>
-      <button
-        className="button secondary"
-        onClick={() =>
-          orderGrid.current?.api.exportDataAsCsv({
-            fileName: "orders-current-page.csv",
-            processCellCallback: (p) => csv(p.value),
-          })
-        }
-      >
-        Export current order page
-      </button>
+      <div className="section-header">
+        <h2>Orders — newest first</h2>
+        <button
+          className="button secondary small"
+          onClick={() =>
+            orderGrid.current?.api.exportDataAsCsv({
+              fileName: "orders-current-page.csv",
+              processCellCallback: (p) => csv(p.value),
+            })
+          }
+        >
+          Export current order page
+        </button>
+      </div>
       <div className="seller-grid">
         <AgGridReact<Order>
           ref={orderGrid}
           theme={theme}
+          domLayout="autoHeight"
           rowData={orders}
           columnDefs={orderColumns}
           defaultColDef={{
@@ -604,6 +624,7 @@ export function SellerDashboard() {
       </div>
       <div className="seller-toolbar">
         <button
+          className="button secondary small"
           disabled={orderPage === 1 || loading}
           onClick={() => void moveOrders(orderPage - 1)}
         >
@@ -613,6 +634,7 @@ export function SellerDashboard() {
           Page {orderPage} · {orderTotal} orders
         </span>
         <button
+          className="button secondary small"
           disabled={
             orders.length < 25 || orderPage * 25 >= orderTotal || loading
           }

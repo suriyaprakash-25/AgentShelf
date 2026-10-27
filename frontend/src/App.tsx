@@ -79,11 +79,13 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/s/:slug" element={<StorePage />} />
+            <Route path="/store/:slug" element={<StorePage />} />
             <Route
               path="/playground"
               element={<Playground capabilities={cap} />}
             />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/seller" element={<Dashboard />} />
             <Route path="/operations" element={<Operations />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/receipt" element={<Receipt />} />
@@ -346,8 +348,9 @@ function StorePage() {
           <span className="eyebrow">THE INDEPENDENT COLLECTION</span>
           <h1>{store?.name || "A shelf of possibilities."}</h1>
           <p>
-            Discover a fictional catalog from Jaipur. Prices and availability
-            are read from the database.
+            {slug === "meera-jaipur"
+              ? "Discover a fictional catalog from Jaipur. Prices and availability are read from the database."
+              : `Handcrafted independent catalog${store?.country ? ` (${store.country})` : ""}. Server-verified prices and live stock availability.`}
           </p>
         </div>
         <div className="seller-toolbar">
