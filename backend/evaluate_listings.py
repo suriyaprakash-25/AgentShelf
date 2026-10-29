@@ -130,9 +130,11 @@ def prepare_images(dataset, directory):
 def run_dataset(dataset, dataset_hash, directory):
     settings = get_settings()
     if not llm.ai_configured(settings):
-        raise DomainError("AI_NOT_CONFIGURED", "Configure real AI access to evaluate.", 503)
-    use_gemini = bool(settings.gemini_api_key and not settings.anthropic_api_key)
-    active_model = settings.gemini_model if use_gemini else settings.anthropic_model
+        raise DomainError("AI_NOT_CONFIGURED", "Configure real Anthropic access to evaluate.", 503)
+    gemini_key = getattr(settings, "gemini_api_key", None)
+    anthropic_key = getattr(settings, "anthropic_api_key", None)
+    use_gemini = bool(gemini_key and not anthropic_key)
+    active_model = getattr(settings, "gemini_model", "gemini-2.5-flash") if use_gemini else getattr(settings, "anthropic_model", "claude-3-7-sonnet-latest")
     if not re.fullmatch(r"[a-zA-Z0-9._:/-]{1,120}", active_model):
         raise ValueError("MODEL_INVALID")
     images, fingerprints = prepare_images(dataset, directory)

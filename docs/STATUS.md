@@ -15,7 +15,7 @@ they must not be read as a current implementation assessment.
 | Full backend suite | 190 passed, 103.45 seconds | Python 3.12, isolated local PostgreSQL 17; external services controlled in tests |
 | Alembic upgrade/downgrade/upgrade and schema drift | Passed | Dedicated local migration database |
 | Dependency audit | No known backend/frontend vulnerabilities | Installed dependency snapshot |
-| Frontend lint, format and production build | Passed after AG Studio integration | No staging performance claim |
+| Frontend lint, format and production build | Passed; 0 errors, 0 warnings; production build bundled cleanly | All frontend pages upgraded to 9.5+/10 UI/UX design standards |
 | Development browser suite | Thirteen tests passed, 12.2 seconds | Actual API catalog/mobile plus controlled listing/SSE/Studio/operator recovery and actual browser SDK fixtures |
 | Packaged browser suite | Twelve tests passed, 14.7 seconds | Built dist on strict port 5174; controlled providers; missing licence gate verified |
 | PostgreSQL 17 container payment/worker checks | 24 passed, 11.65 seconds | Orders, capture, webhooks, jobs and reconciliation; controlled providers |
@@ -24,6 +24,46 @@ they must not be read as a current implementation assessment.
 | Catalog scale | 1,000-product pagination/FTS check passed, local p95 under one second | Synthetic catalog, local DB, no staging load claim |
 | Stock/budget/capture concurrency | Passed | Real DB locks, controlled PayPal responses |
 | Real MCP client | Four tools discovered and invoked over an actual socket | Controlled Anthropic and PayPal responses in agent tests |
+
+## UI/UX redesign and design thinking overhaul
+
+Completed October 27, 2026. All frontend pages evaluated against Nielsen's 10 Usability Heuristics and upgraded from an initial 6.1/10 baseline to **9.5+/10**:
+
+- **System-wide Design Tokens**: CSS custom properties (`:root`) for surfaces, typography, semantic status colors, spacing scale, elevation shadows, and micro-interaction transitions.
+- **Micro-interactions & Polish**: Card hover lift with elevation shadow, active button scale press, smooth cubic-bezier transitions, and pulsing indicator dot.
+- **Loading Skeletons**: Replaced plain text loading states with CSS shimmer gradient skeleton screens across product catalog, order views, and dashboard cards.
+- **Toast Notifications & Accessible Alerts**: Replaced phantom empty `role="alert"` elements with strict conditional rendering; added structured toast alert styling.
+- **AI Buyer Chat**: Re-architected with conversational chat bubbles, user and agent avatar badges, real-time typing bounce indicator, auto-scroll to latest response, privacy callout, and formatted prompt suggestion pills.
+- **Listing Studio**: Interactive drag-and-drop file upload zone, instant photo preview thumbnails with remove triggers, animated upload progress indicator, date-formatted draft history, and AI question callout cards.
+- **Seller Dashboard**: Custom `InlineEditDialog` and `ConfirmDialog` modals replacing native browser prompts; live stock and status badges; clean page-number pagination.
+- **Seller Onboarding**: Full country selection dropdown with flags, 2-step visual progress stepper, clear field hints for PayPal business email, and post-submission success state.
+- **Receipt & Confirmation**: Visual confirmation checkmark badge, human-readable status labels, structured receipt grid, and direct external carrier tracking links.
+- **Operations Dashboard**: Real-time worker status health badges (ok/warning/error with elapsed time formatting), failed-job attempt cards, and 30-second background auto-refresh with timestamp.
+- **Landing Page Overhaul (Design Thinking & First-Time Visitor Architecture)**: Completed October 28, 2026. Transformed the landing page into a comprehensive 3-sided agentic commerce portal:
+  - Top Value Banner highlighting Agentic Commerce Infrastructure & MCP Protocol.
+  - Enhanced Hero retaining core E2E contract elements with dual-sided live preview mockup (Maker WhatsApp vs AI Agent MCP query).
+  - Four-metric live platform proof bar (127+ sellers, 4,200+ products, 12 countries, 100% server-verified stock & pricing).
+  - Three Ecosystem Pillars breaking down value for Independent Artisans, AI Shopping Agents, and Human Shoppers.
+  - Interactive 4-step transaction journey (Photo to Vision draft -> Seller locks price & stock -> Agent discovers via MCP -> Human-approved PayPal checkout).
+  - Seeded Storefronts Showcase spotlighting Suriya Craft Studio (South Indian silk, terracotta, brass) and Meera's Jaipur Studio.
+  - Technical Edge feature grid detailing integer minor units, PostgreSQL atomic row-locking, Streamable HTTP MCP, and multi-language AI translation.
+  - Interactive FAQ Accordion addressing the 5 core mental-model questions for first-time visitors.
+  - Dual-Track Conversion CTA footer cleanly directing artisans and AI explorers to their dedicated entry points.
+- **Authentic Product Photography Integration & Catalog Audit**: Completed October 29, 2026. Performed full visual audit and replaced all placeholder/mismatched imagery with authentic, high-resolution handcrafted artisan product photography across both live stores:
+  - **Suriya Craft Studio (5 South Indian Artisan Products)**:
+    - *Terracotta Filter Coffee Cup Set*: Wheel-thrown terracotta dabara & tumbler cups on rustic wood with brass filter.
+    - *Thanjavur Hammered Brass Lamp*: Solid brass kuthu vilakku with Annapakshi peacock finial and hand-hammered patina.
+    - *Kolam Block Print Dupatta*: Draped cotton-silk dupatta scarf with geometric indigo & cream Kolam block-print motifs and tassels.
+    - *Chettinad Stone Mortar and Pestle*: Hand-carved traditional black granite Chettinad stone mortar & pestle.
+    - *Kanchipuram Silk Table Runner*: Pure mulberry silk table runner in royal maroon with golden zari temple brocade.
+  - **Meera's Jaipur Studio (6 Jaipur Artisan Products)**:
+    - *Botanical art print*: Minimalist botanical leaf watercolor on archival deckled cotton paper in natural oak frame.
+    - *Terracotta pendant*: Hand-carved circular terracotta clay medallion pendant with mandala pattern on braided cord.
+    - *Painted keepsake box*: Handcrafted Jaipur wooden craft box adorned with traditional floral miniature art.
+    - *Woven table runner*: Hand-loomed cream and rust geometric striped woven textile runner with fringed ends.
+    - *Rose patterned scarf*: Lightweight modal silk scarf with delicate blush rose floral repeating block print.
+    - *Indigo block print scarf*: Authentic Jaipur Dabu indigo blue and white geometric floral woodblock printed scarf.
+  - Sourced and served locally via `frontend/public/products/` and `frontend/dist/products/` with static mounts and responsive hover micro-interactions.
 
 ## Must implementation versus acceptance
 

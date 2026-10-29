@@ -5,11 +5,11 @@
     "shipping_rates": {"US": 800, "GB": 1000}
   },
   "products": [
-    {"title":"Indigo block print scarf", "description":"Demo textile scarf with a blue block pattern. Fictional catalog entry; seller details require confirmation.", "price_minor":4500,"stock":8,"currency":"USD","attributes":{"category":"textiles"},"images":[]},
-    {"title":"Terracotta pendant", "description":"Demo earth-tone pendant with a circular pattern.","price_minor":2400,"stock":5,"currency":"USD","attributes":{"category":"jewellery"},"images":[]},
-    {"title":"Woven table runner", "description":"Demo cream and rust textile table runner.","price_minor":3800,"stock":4,"currency":"USD","attributes":{"category":"textiles"},"images":[]},
-    {"title":"Botanical art print", "description":"Demo botanical leaf illustration printed on paper.","price_minor":1800,"stock":12,"currency":"USD","attributes":{"category":"prints"},"images":[]},
-    {"title":"Painted keepsake box", "description":"Demo patterned craft box with a removable lid.","price_minor":3200,"stock":3,"currency":"USD","attributes":{"category":"crafts"},"images":[]},
-    {"title":"Rose patterned scarf", "description":"Demo textile scarf with a rose coloured repeating pattern.","price_minor":4200,"stock":6,"currency":"USD","attributes":{"category":"textiles"},"images":[]}
+    {"title":"Indigo block print scarf", "description":"Demo textile scarf with a blue block pattern. Fictional catalog entry; seller details require confirmation.", "price_minor":4500,"stock":8,"currency":"USD","attributes":{"category":"textiles"},"images":["/products/meera-indigo-scarf.jpg"]},
+    {"title":"Terracotta pendant", "description":"Demo earth-tone pendant with a circular pattern.","price_minor":2400,"stock":5,"currency":"USD","attributes":{"category":"jewellery"},"images":["/products/meera-terracotta-pendant.jpg"]},
+    {"title":"Woven table runner", "description":"Demo cream and rust textile table runner.","price_minor":3800,"stock":4,"currency":"USD","attributes":{"category":"textiles"},"images":["/products/meera-woven-runner.jpg"]},
+    {"title":"Botanical art print", "description":"Demo botanical leaf illustration printed on paper.","price_minor":1800,"stock":12,"currency":"USD","attributes":{"category":"prints"},"images":["/products/meera-botanical-print.jpg"]},
+    {"title":"Painted keepsake box", "description":"Demo patterned craft box with a removable lid.","price_minor":3200,"stock":3,"currency":"USD","attributes":{"category":"crafts"},"images":["/products/meera-keepsake-box.jpg"]},
+    {"title":"Rose patterned scarf", "description":"Demo textile scarf with a rose coloured repeating pattern.","price_minor":4200,"stock":6,"currency":"USD","attributes":{"category":"textiles"},"images":["/products/meera-rose-scarf.jpg"]}
   ]
 }

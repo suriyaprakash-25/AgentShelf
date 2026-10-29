@@ -33,7 +33,7 @@ never hidden reasoning. Use only the configured destination and budget."""
 def ai_configured(settings=None) -> bool:
     """Return True when either Anthropic or Gemini credentials are configured."""
     cfg = settings or get_settings()
-    return bool(cfg.anthropic_api_key or cfg.gemini_api_key)
+    return bool(getattr(cfg, "anthropic_api_key", None) or getattr(cfg, "gemini_api_key", None))
 
 
 def _gemini_url(settings) -> str:

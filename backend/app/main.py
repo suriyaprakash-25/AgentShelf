@@ -19,7 +19,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.gzip import GZipMiddleware
 
-from app import llm, observability, orders, quotes, rate_limits
+from app import llm, observability, orders, paypal, quotes, rate_limits
 from app.body_limits import BodySizeLimitMiddleware
 from app.config import get_settings, parse_browser_sentry_dsn
 from app.db import get_engine, session_factory
@@ -327,6 +327,7 @@ class CheckoutInput(InputModel):
 @router.post("/api/checkouts")
 def checkout(body: CheckoutInput):
     """Start approval-required checkout with an idempotent reservation."""
+    paypal.require_ready()
     return orders.create_checkout(str(body.quote_id), str(body.session_id))
 
 
@@ -425,6 +426,8 @@ def create_app():
         ):
             application.add_api_route(path, frontend_page, methods=["GET"], include_in_schema=False)
         application.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
+        if (FRONTEND_DIST / "products").is_dir():
+            application.mount("/products", StaticFiles(directory=FRONTEND_DIST / "products"), name="products")
     application.mount("/", transport)
     return application
 

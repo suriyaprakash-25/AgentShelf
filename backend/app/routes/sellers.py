@@ -11,7 +11,7 @@ from app.config import get_settings
 from app.db import session_factory
 from app.errors import DomainError
 from app.guards import safe_text
-from app.models import Order, Product, Quote, Seller, SellerSession
+from app.models import MediaAsset, Order, Product, Quote, Seller, SellerSession
 
 router = APIRouter()
 
@@ -187,6 +187,7 @@ class ProductInput(Input):
     description: str = Field(max_length=600)
     price_minor: int = Field(strict=True, ge=1, le=100_000_000)
     stock: int = Field(strict=True, ge=0, le=1_000_000)
+    media_id: uuid.UUID | None = None
 
 
 @router.post("/api/me/products", status_code=201)
@@ -194,6 +195,19 @@ def create_product(body: ProductInput, request: Request):
     seller_id, _ = auth.seller_access(request, write=True)
     with session_factory() as db, db.begin():
         db.scalar(select(Seller).where(Seller.id == seller_id).with_for_update())
+        asset = None
+        if body.media_id:
+            asset = db.scalar(
+                select(MediaAsset)
+                .where(
+                    MediaAsset.id == body.media_id,
+                    MediaAsset.seller_id == seller_id,
+                    MediaAsset.product_id.is_(None),
+                )
+                .with_for_update()
+            )
+            if not asset:
+                raise DomainError("MEDIA_NOT_FOUND", "Select an unlisted photo from your account.", 404)
         number = (
             db.scalar(
                 select(func.coalesce(func.max(Product.short_no), 0)).where(
@@ -210,15 +224,19 @@ def create_product(body: ProductInput, request: Request):
             price_minor=body.price_minor,
             stock=body.stock,
             status="draft",
+            images=[get_settings().public_api_url + f"/api/media/{asset.id}"] if asset else [],
         )
         db.add(product)
         db.flush()
+        if asset:
+            asset.product_id = product.id
         return product_json(product)
 
 
 class ProductPatch(Input):
     price_minor: int | None = Field(default=None, strict=True, ge=1, le=100_000_000)
     stock: int | None = Field(default=None, strict=True, ge=0, le=1_000_000)
+    media_id: uuid.UUID | None = None
 
 
 def owned_product(db, product_id, seller_id):
@@ -237,9 +255,24 @@ def update_product(product_id: uuid.UUID, body: ProductPatch, request: Request):
     seller_id, _ = auth.seller_access(request, write=True)
     updates = body.model_dump(exclude_unset=True)
     if not updates or any(value is None for value in updates.values()):
-        raise DomainError("INVALID_INPUT", "Set a valid price or available stock quantity.")
+        raise DomainError("INVALID_INPUT", "Set a valid price, stock quantity, or photo.")
     with session_factory() as db, db.begin():
         product = owned_product(db, product_id, seller_id)
+        media_id = updates.pop("media_id", None)
+        if media_id:
+            asset = db.scalar(
+                select(MediaAsset)
+                .where(
+                    MediaAsset.id == media_id,
+                    MediaAsset.seller_id == seller_id,
+                    MediaAsset.product_id.is_(None),
+                )
+                .with_for_update()
+            )
+            if not asset:
+                raise DomainError("MEDIA_NOT_FOUND", "Select an unlisted photo from your account.", 404)
+            asset.product_id = product.id
+            product.images = [get_settings().public_api_url + f"/api/media/{asset.id}"]
         for key, value in updates.items():
             setattr(product, key, value)
         return product_json(product)
