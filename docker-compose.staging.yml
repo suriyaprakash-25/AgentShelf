@@ -1,0 +1,88 @@
+# AgentShelf Staging & One-Click Deployment Compose
+# Spins up isolated PostgreSQL 17, Same-Origin Web Service (FastAPI + React bundle),
+# and the background reconciliation worker.
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: agentshelf-staging-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: agentshelf
+      POSTGRES_USER: agentshelf
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-agentshelf-secure-staging-password}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - staging_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentshelf -d agentshelf"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentshelf-staging-web
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: staging
+      DATABASE_URL: postgresql+psycopg://agentshelf:${POSTGRES_PASSWORD:-agentshelf-secure-staging-password}@db:5432/agentshelf
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://127.0.0.1:8000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://127.0.0.1:8000}
+      PAYPAL_MODE: ${PAYPAL_MODE:-sandbox}
+      LIVE_CHECKOUT_ENABLED: ${LIVE_CHECKOUT_ENABLED:-false}
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID}
+      PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET}
+      PAYPAL_WEBHOOK_ID: ${PAYPAL_WEBHOOK_ID:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-5-20250929}
+      MEDIA_BACKEND: ${MEDIA_BACKEND:-local}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-orders@agentshelf.local}
+      WHATSAPP_APP_SECRET: ${WHATSAPP_APP_SECRET:-}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-}
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentshelf-staging-worker
+    restart: unless-stopped
+    command: ["python", "worker.py"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: staging
+      DATABASE_URL: postgresql+psycopg://agentshelf:${POSTGRES_PASSWORD:-agentshelf-secure-staging-password}@db:5432/agentshelf
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://127.0.0.1:8000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://127.0.0.1:8000}
+      PAYPAL_MODE: ${PAYPAL_MODE:-sandbox}
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID}
+      PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET}
+      PAYPAL_WEBHOOK_ID: ${PAYPAL_WEBHOOK_ID:-}
+      MEDIA_BACKEND: ${MEDIA_BACKEND:-local}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-orders@agentshelf.local}
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+
+volumes:
+  staging_postgres_data:
