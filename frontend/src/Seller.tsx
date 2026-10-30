@@ -18,6 +18,7 @@ import {
   type ColDef,
 } from "ag-grid-community";
 import { api, uploadPhoto } from "./api";
+import { resolveProductImage } from "./productImages";
 import { ListingStudio } from "./ListingStudio";
 import { CheckCircle, X, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -324,8 +325,9 @@ export function SellerDashboard() {
   const [orderTotal, setOrderTotal] = useState(0);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [copilotSummary, setCopilotSummary] =
-    useState<CopilotSummary | null>(null);
+  const [copilotSummary, setCopilotSummary] = useState<CopilotSummary | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const productGrid = useRef<AgGridReact<Product>>(null);
@@ -826,10 +828,10 @@ export function SellerDashboard() {
       <div className="seller-actions">
         {products.map((p) => (
           <div className="panel" key={p.id}>
-            {p.images?.[0] && (
+            {resolveProductImage(p.title, p.images?.[0]) && (
               <img
                 className="seller-card-photo"
-                src={p.images[0]}
+                src={resolveProductImage(p.title, p.images?.[0])!}
                 alt={p.title}
                 loading="lazy"
               />
@@ -1334,8 +1336,8 @@ export function SellerOnboarding() {
             <h2>Almost there!</h2>
             <p>{message}</p>
             <p>
-              Check your inbox for a sign-in link to access your seller dashboard
-              and start listing products.
+              Check your inbox for a sign-in link to access your seller
+              dashboard and start listing products.
             </p>
             <Link
               to="/dashboard"
@@ -1392,13 +1394,14 @@ export function SellerOnboarding() {
                 autoComplete="email"
               />
               <span className="field-hint">
-                The email registered with your PayPal business account. Buyers pay
-                to this address. Must be a verified PayPal account.
+                The email registered with your PayPal business account. Buyers
+                pay to this address. Must be a verified PayPal account.
               </span>
             </label>
             <label className="consent-label">
               <input name="consent" type="checkbox" required />I confirm these
-              store details and consent to storing them for seller account access.
+              store details and consent to storing them for seller account
+              access.
             </label>
             <div className="notice" style={{ margin: 0, fontSize: 11 }}>
               We'll verify your sign-in email before creating the store. Initial

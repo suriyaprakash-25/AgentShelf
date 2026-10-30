@@ -135,8 +135,11 @@ def seller_access(request: Request, write=False):
         seller = db.get(Seller, session.seller_id)
         if not seller or seller.status != "active":
             raise DomainError("SELLER_UNAVAILABLE", "This seller account is unavailable.", 403)
+        allowed_origins = {get_settings().frontend_url}
+        if get_settings().app_env in {"local", "test"}:
+            allowed_origins.update({"http://localhost:5173", "http://127.0.0.1:5173"})
         if write and (
-            request.headers.get("origin") != get_settings().frontend_url
+            request.headers.get("origin") not in allowed_origins
             or not hmac.compare_digest(request.headers.get("x-csrf-token", ""), session.csrf_token)
         ):
             raise DomainError("CSRF_REJECTED", "Reload your dashboard before trying again.", 403)

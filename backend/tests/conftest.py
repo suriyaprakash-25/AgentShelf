@@ -9,7 +9,12 @@ os.environ.setdefault(
     "DATABASE_URL",
     "postgresql+psycopg://agentshelf:local-development-only@127.0.0.1:5433/agentshelf",
 )
+os.environ.setdefault(
+    "TEST_DATABASE_URL",
+    "postgresql+psycopg://agentshelf:local-development-only@127.0.0.1:5433/agentshelf_test",
+)
 os.environ.setdefault("APP_ENV", "test")
+os.environ.setdefault("FRONTEND_URL", "http://localhost:5173")
 
 
 @pytest.fixture

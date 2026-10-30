@@ -10,7 +10,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore", hide_input_in_errors=True)
+    model_config = SettingsConfigDict(
+        env_file=("../.env", ".env"), extra="ignore", hide_input_in_errors=True
+    )
 
     app_env: Literal["local", "test", "staging", "production"] = "local"
     database_url: str

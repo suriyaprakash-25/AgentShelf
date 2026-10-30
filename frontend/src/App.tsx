@@ -32,6 +32,7 @@ import {
   type Quote,
   type Store,
 } from "./api";
+import { resolveProductImage } from "./productImages";
 import "./styles.css";
 
 const AiBuyer = lazy(() =>
@@ -105,7 +106,11 @@ export default function App() {
                   <p style={{ color: "var(--muted)", fontSize: 14 }}>
                     The page you were looking for doesn't exist.
                   </p>
-                  <Link className="button" to="/" style={{ marginTop: 16, display: "inline-flex" }}>
+                  <Link
+                    className="button"
+                    to="/"
+                    style={{ marginTop: 16, display: "inline-flex" }}
+                  >
                     Back to AgentShelf <ArrowRight size={16} />
                   </Link>
                 </div>
@@ -150,7 +155,8 @@ function Home() {
           <Zap size={13} /> AGENTIC COMMERCE INFRASTRUCTURE
         </span>
         <span className="announcement-text">
-          Bridging independent artisans and autonomous AI shopping agents via Model Context Protocol (MCP) & PayPal.
+          Bridging independent artisans and autonomous AI shopping agents via
+          Model Context Protocol (MCP) & PayPal.
         </span>
       </div>
 
@@ -167,7 +173,10 @@ function Home() {
               Found by <em>AI.</em>
             </h1>
             <p className="lede">
-              Your craft deserves a bigger shelf. AgentShelf turns handcrafted product photos into an agent-ready catalog that AI assistants can discover and quote over open Model Context Protocol (MCP)—with human approval on PayPal every step of the way.
+              Your craft deserves a bigger shelf. AgentShelf turns handcrafted
+              product photos into an agent-ready catalog that AI assistants can
+              discover and quote over open Model Context Protocol (MCP)—with
+              human approval on PayPal every step of the way.
             </p>
             <div className="actions">
               <Link className="button" to="/s/meera-jaipur">
@@ -222,7 +231,10 @@ function Home() {
       </section>
 
       {/* Proof / Stats section */}
-      <section className="proof page" style={{ paddingTop: 0, paddingBottom: 0 }}>
+      <section
+        className="proof page"
+        style={{ paddingTop: 0, paddingBottom: 0 }}
+      >
         <div className="proof-grid">
           <div className="stat">
             <strong>127+</strong>
@@ -258,7 +270,10 @@ function Home() {
           <span className="eyebrow">A COMPLETE THREE-SIDED PLATFORM</span>
           <h2>Built for artisans. Ready for AI agents. Safe for buyers.</h2>
           <p className="section-sub">
-            Traditional marketplaces trap independent makers in complex software and steep commission cuts. AgentShelf builds the direct open protocol bridge so AI assistants can find and shop from small makers.
+            Traditional marketplaces trap independent makers in complex software
+            and steep commission cuts. AgentShelf builds the direct open
+            protocol bridge so AI assistants can find and shop from small
+            makers.
           </p>
         </div>
         <div className="ecosystem-grid">
@@ -269,20 +284,26 @@ function Home() {
             </div>
             <h3>From Camera to Global Shelf</h3>
             <p>
-              No coding, no SEO keyword stuffing, and no complex inventory software. List your work in seconds.
+              No coding, no SEO keyword stuffing, and no complex inventory
+              software. List your work in seconds.
             </p>
             <ul className="eco-list">
               <li>
-                <Check size={15} /> <strong>WhatsApp & Web Uploads:</strong> Snap 1–4 photos of your craft from your phone.
+                <Check size={15} /> <strong>WhatsApp & Web Uploads:</strong>{" "}
+                Snap 1–4 photos of your craft from your phone.
               </li>
               <li>
-                <Check size={15} /> <strong>Vision AI Drafting:</strong> Automated material detection, category classification, and descriptions.
+                <Check size={15} /> <strong>Vision AI Drafting:</strong>{" "}
+                Automated material detection, category classification, and
+                descriptions.
               </li>
               <li>
-                <Check size={15} /> <strong>You Keep Control:</strong> You confirm the exact USD selling price and live stock quantity.
+                <Check size={15} /> <strong>You Keep Control:</strong> You
+                confirm the exact USD selling price and live stock quantity.
               </li>
               <li>
-                <Check size={15} /> <strong>Direct Payments:</strong> PayPal captures route directly to your business account.
+                <Check size={15} /> <strong>Direct Payments:</strong> PayPal
+                captures route directly to your business account.
               </li>
             </ul>
             <Link to="/dashboard" className="card-action-link">
@@ -297,20 +318,27 @@ function Home() {
             </div>
             <h3>Native Model Context Protocol</h3>
             <p>
-              AI assistants need structured, deterministic endpoints, not brittle web scrapers that break on layout changes.
+              AI assistants need structured, deterministic endpoints, not
+              brittle web scrapers that break on layout changes.
             </p>
             <ul className="eco-list">
               <li>
-                <Check size={15} /> <strong>Streamable HTTP Protocol:</strong> Open JSON-RPC 2.0 endpoint at <code>/mcp</code>.
+                <Check size={15} /> <strong>Streamable HTTP Protocol:</strong>{" "}
+                Open JSON-RPC 2.0 endpoint at <code>/mcp</code>.
               </li>
               <li>
-                <Check size={15} /> <strong>Deterministic Tool Suite:</strong> <code>search_products</code>, <code>get_quote</code>, <code>create_checkout</code>.
+                <Check size={15} /> <strong>Deterministic Tool Suite:</strong>{" "}
+                <code>search_products</code>, <code>get_quote</code>,{" "}
+                <code>create_checkout</code>.
               </li>
               <li>
-                <Check size={15} /> <strong>Stock Concurrency Locks:</strong> PostgreSQL <code>FOR UPDATE</code> row-locking prevents phantom overselling.
+                <Check size={15} /> <strong>Stock Concurrency Locks:</strong>{" "}
+                PostgreSQL <code>FOR UPDATE</code> row-locking prevents phantom
+                overselling.
               </li>
               <li>
-                <Check size={15} /> <strong>Schema.org JSON-LD:</strong> Full product semantic metadata on every storefront.
+                <Check size={15} /> <strong>Schema.org JSON-LD:</strong> Full
+                product semantic metadata on every storefront.
               </li>
             </ul>
             <Link to="/playground" className="card-action-link">
@@ -325,20 +353,26 @@ function Home() {
             </div>
             <h3>Zero Autonomous Wallet Drain</h3>
             <p>
-              Autonomous shopping shouldn't mean unvetted credit card charges. We strictly enforce human-in-the-loop authorization.
+              Autonomous shopping shouldn't mean unvetted credit card charges.
+              We strictly enforce human-in-the-loop authorization.
             </p>
             <ul className="eco-list">
               <li>
-                <Check size={15} /> <strong>Human-in-the-Loop:</strong> Every purchase requires explicit buyer sign-off on PayPal.
+                <Check size={15} /> <strong>Human-in-the-Loop:</strong> Every
+                purchase requires explicit buyer sign-off on PayPal.
               </li>
               <li>
-                <Check size={15} /> <strong>Integer Minor Units:</strong> All arithmetic calculated in cents ($42.00 = 4200), zero float errors.
+                <Check size={15} /> <strong>Integer Minor Units:</strong> All
+                arithmetic calculated in cents ($42.00 = 4200), zero float
+                errors.
               </li>
               <li>
-                <Check size={15} /> <strong>Live Shipping Verification:</strong> Server-verified shipping rates to US and UK destinations.
+                <Check size={15} /> <strong>Live Shipping Verification:</strong>{" "}
+                Server-verified shipping rates to US and UK destinations.
               </li>
               <li>
-                <Check size={15} /> <strong>Durable Tracking:</strong> Single-parcel carrier tracking tied to your PayPal capture.
+                <Check size={15} /> <strong>Durable Tracking:</strong>{" "}
+                Single-parcel carrier tracking tied to your PayPal capture.
               </li>
             </ul>
             <Link to="/s/meera-jaipur" className="card-action-link">
@@ -354,7 +388,8 @@ function Home() {
           <span className="eyebrow">HOW A TRANSACTION HAPPENS</span>
           <h2>The journey of an agentic purchase.</h2>
           <p className="section-sub">
-            From the moment an artisan takes a photograph to final delivery tracking, every step is coordinated with strict verification.
+            From the moment an artisan takes a photograph to final delivery
+            tracking, every step is coordinated with strict verification.
           </p>
         </div>
         <div className="steps-grid four-col">
@@ -365,7 +400,9 @@ function Home() {
             </div>
             <h3>1. Snap & Draft</h3>
             <p>
-              Artisan uploads photos via WhatsApp or Web. Multimodal vision models analyze craft materials, textures, and dimensions to suggest a detailed draft.
+              Artisan uploads photos via WhatsApp or Web. Multimodal vision
+              models analyze craft materials, textures, and dimensions to
+              suggest a detailed draft.
             </p>
           </article>
           <article>
@@ -375,7 +412,8 @@ function Home() {
             </div>
             <h3>2. Seller Confirms</h3>
             <p>
-              AI never sets prices autonomously. The seller sets their USD selling price and available units, confirming human publication.
+              AI never sets prices autonomously. The seller sets their USD
+              selling price and available units, confirming human publication.
             </p>
           </article>
           <article>
@@ -385,7 +423,9 @@ function Home() {
             </div>
             <h3>3. Agent Discovers</h3>
             <p>
-              When a buyer prompts an AI shopping agent, the agent searches live catalogs over MCP, verifies real stock, and requests a binding quote.
+              When a buyer prompts an AI shopping agent, the agent searches live
+              catalogs over MCP, verifies real stock, and requests a binding
+              quote.
             </p>
           </article>
           <article>
@@ -395,7 +435,9 @@ function Home() {
             </div>
             <h3>4. PayPal Authorization</h3>
             <p>
-              The buyer reviews the exact quote and authorizes payment directly on PayPal. The seller receives an instant dispatch alert with buyer shipping details.
+              The buyer reviews the exact quote and authorizes payment directly
+              on PayPal. The seller receives an instant dispatch alert with
+              buyer shipping details.
             </p>
           </article>
         </div>
@@ -407,7 +449,8 @@ function Home() {
           <span className="eyebrow">EXPLORE ACTIVE SEEDED STORES</span>
           <h2>Real catalogs, live on localhost.</h2>
           <p className="section-sub">
-            Experience how distinct independent studios are presented to both human shoppers and autonomous agent crawlers.
+            Experience how distinct independent studios are presented to both
+            human shoppers and autonomous agent crawlers.
           </p>
         </div>
         <div className="stores-showcase-grid">
@@ -415,10 +458,13 @@ function Home() {
           <div className="store-card-featured">
             <div className="store-card-header">
               <div>
-                <span className="store-location-badge">SOUTH INDIA · TEXTILES & BRASS</span>
+                <span className="store-location-badge">
+                  SOUTH INDIA · TEXTILES & BRASS
+                </span>
                 <h3>Suriya Craft Studio</h3>
                 <p className="store-desc">
-                  Handcrafted silk table runners, terracotta filter coffee cups, and hammered brass oil lamps.
+                  Handcrafted silk table runners, terracotta filter coffee cups,
+                  and hammered brass oil lamps.
                 </p>
               </div>
               <span className="pill green">5 Live Products</span>
@@ -429,7 +475,9 @@ function Home() {
                 <span className="item-price">$42.00 USD</span>
               </div>
               <div className="mini-item">
-                <span className="item-name">Terracotta Filter Coffee Cup Set</span>
+                <span className="item-name">
+                  Terracotta Filter Coffee Cup Set
+                </span>
                 <span className="item-price">$24.00 USD</span>
               </div>
               <div className="mini-item">
@@ -448,10 +496,13 @@ function Home() {
           <div className="store-card-featured">
             <div className="store-card-header">
               <div>
-                <span className="store-location-badge">RAJASTHAN · TRADITIONAL TEXTILES</span>
+                <span className="store-location-badge">
+                  RAJASTHAN · TRADITIONAL TEXTILES
+                </span>
                 <h3>Meera's Jaipur Studio</h3>
                 <p className="store-desc">
-                  Artisan catalog featuring indigo block print scarves, terracotta pendants, and botanical prints.
+                  Artisan catalog featuring indigo block print scarves,
+                  terracotta pendants, and botanical prints.
                 </p>
               </div>
               <span className="pill green">6 Live Products</span>
@@ -485,36 +536,53 @@ function Home() {
           <span className="eyebrow">ENGINEERED FOR SAFETY & SCALE</span>
           <h2>The technical foundations under the hood.</h2>
           <p className="section-sub">
-            Built from scratch to resolve the fundamental trust and concurrency challenges of agentic e-commerce.
+            Built from scratch to resolve the fundamental trust and concurrency
+            challenges of agentic e-commerce.
           </p>
         </div>
         <div className="tech-grid">
           <div className="tech-card">
-            <div className="tech-icon"><Cpu size={22} /></div>
+            <div className="tech-icon">
+              <Cpu size={22} />
+            </div>
             <h4>Model Context Protocol (MCP)</h4>
             <p>
-              Standardized JSON-RPC 2.0 Streamable HTTP transport exposing discovery and transactional tools. Compatible with Claude, Gemini, and custom agents.
+              Standardized JSON-RPC 2.0 Streamable HTTP transport exposing
+              discovery and transactional tools. Compatible with Claude, Gemini,
+              and custom agents.
             </p>
           </div>
           <div className="tech-card">
-            <div className="tech-icon"><Lock size={22} /></div>
+            <div className="tech-icon">
+              <Lock size={22} />
+            </div>
             <h4>Deterministic Minor Units</h4>
             <p>
-              Money is stored and computed strictly as integer minor units ($18.00 = 1800 cents), preventing IEEE-754 floating-point truncation bugs during settlement.
+              Money is stored and computed strictly as integer minor units
+              ($18.00 = 1800 cents), preventing IEEE-754 floating-point
+              truncation bugs during settlement.
             </p>
           </div>
           <div className="tech-card">
-            <div className="tech-icon"><Layers3 size={22} /></div>
+            <div className="tech-icon">
+              <Layers3 size={22} />
+            </div>
             <h4>Postgres Concurrency Locking</h4>
             <p>
-              Atomic <code>SELECT FOR UPDATE</code> row locks guarantee inventory reservations during concurrent agent quote confirmation, preventing double-selling.
+              Atomic <code>SELECT FOR UPDATE</code> row locks guarantee
+              inventory reservations during concurrent agent quote confirmation,
+              preventing double-selling.
             </p>
           </div>
           <div className="tech-card">
-            <div className="tech-icon"><Globe2 size={22} /></div>
+            <div className="tech-icon">
+              <Globe2 size={22} />
+            </div>
             <h4>Multi-Language AI Translation</h4>
             <p>
-              Storefronts automatically translate product titles and descriptions into 6 languages (Spanish, French, German, Hindi, Japanese) on demand.
+              Storefronts automatically translate product titles and
+              descriptions into 6 languages (Spanish, French, German, Hindi,
+              Japanese) on demand.
             </p>
           </div>
         </div>
@@ -526,7 +594,8 @@ function Home() {
           <span className="eyebrow">COMMON QUESTIONS</span>
           <h2>Everything you need to know about AgentShelf.</h2>
           <p className="section-sub">
-            Understanding the transition from traditional e-commerce to agent-native commerce.
+            Understanding the transition from traditional e-commerce to
+            agent-native commerce.
           </p>
         </div>
         <div className="faq-list">
@@ -562,7 +631,10 @@ function Home() {
                   aria-expanded={isOpen}
                 >
                   <span className="faq-q-text">{item.q}</span>
-                  <ChevronDown size={18} className={`faq-icon ${isOpen ? "rotated" : ""}`} />
+                  <ChevronDown
+                    size={18}
+                    className={`faq-icon ${isOpen ? "rotated" : ""}`}
+                  />
                 </button>
                 {isOpen && (
                   <div className="faq-answer">
@@ -581,7 +653,10 @@ function Home() {
           <div className="cta-box seller-side">
             <span className="eyebrow">FOR ARTISANS & MAKERS</span>
             <h3>Ready to put your craft on the global shelf?</h3>
-            <p>Join independent sellers reaching a new wave of AI-driven international buyers. Free to get started from your phone.</p>
+            <p>
+              Join independent sellers reaching a new wave of AI-driven
+              international buyers. Free to get started from your phone.
+            </p>
             <Link to="/dashboard" className="button">
               Create Your Store <ArrowRight size={16} />
             </Link>
@@ -589,7 +664,10 @@ function Home() {
           <div className="cta-box agent-side">
             <span className="eyebrow">FOR SHOPPERS & DEVELOPERS</span>
             <h3>Want to experience AI shopping in action?</h3>
-            <p>Chat with the AI shopping assistant, discover curated products, and test real MCP tool activity live.</p>
+            <p>
+              Chat with the AI shopping assistant, discover curated products,
+              and test real MCP tool activity live.
+            </p>
             <Link to="/playground" className="button secondary">
               Open Buyer Playground <ArrowRight size={16} />
             </Link>
@@ -738,13 +816,22 @@ function StorePage() {
           </p>
           {store && (
             <p className="product-count">
-              {store.products.length} product{store.products.length !== 1 ? "s" : ""}
+              {store.products.length} product
+              {store.products.length !== 1 ? "s" : ""}
               {store.next_cursor ? " · scroll for more" : ""}
             </p>
           )}
         </div>
         <div className="seller-toolbar">
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, whiteSpace: "nowrap" }}>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              fontSize: 12,
+              whiteSpace: "nowrap",
+            }}
+          >
             <Globe2 size={14} />
             <select
               aria-label="Listing language"
@@ -777,10 +864,22 @@ function StorePage() {
             <div key={i} className="skeleton-card">
               <div className="skeleton" style={{ height: 225 }} />
               <div style={{ padding: 20 }}>
-                <div className="skeleton" style={{ height: 12, width: "40%", marginBottom: 12 }} />
-                <div className="skeleton" style={{ height: 20, width: "80%", marginBottom: 10 }} />
-                <div className="skeleton" style={{ height: 12, width: "100%", marginBottom: 6 }} />
-                <div className="skeleton" style={{ height: 12, width: "70%" }} />
+                <div
+                  className="skeleton"
+                  style={{ height: 12, width: "40%", marginBottom: 12 }}
+                />
+                <div
+                  className="skeleton"
+                  style={{ height: 20, width: "80%", marginBottom: 10 }}
+                />
+                <div
+                  className="skeleton"
+                  style={{ height: 12, width: "100%", marginBottom: 6 }}
+                />
+                <div
+                  className="skeleton"
+                  style={{ height: 12, width: "70%" }}
+                />
               </div>
             </div>
           ))}
@@ -793,12 +892,13 @@ function StorePage() {
             {store.products.map((p, i) => {
               const t =
                 lang !== "en" ? translations[`${p.product_id}:${lang}`] : null;
+              const productImg = resolveProductImage(p.title, p.image_url);
               return (
                 <article className="product-card" key={p.product_id}>
-                  {p.image_url ? (
+                  {productImg ? (
                     <img
                       className="product-photo"
-                      src={p.image_url}
+                      src={productImg}
                       alt={t ? t.title : p.title}
                       loading="lazy"
                     />
@@ -816,7 +916,9 @@ function StorePage() {
                     <h2>{t ? t.title : p.title}</h2>
                     <p>{t ? t.description : p.description}</p>
                     {/* Stock badge */}
-                    <span className={`stock-badge ${p.in_stock ? "in-stock" : "out-of-stock"}`}>
+                    <span
+                      className={`stock-badge ${p.in_stock ? "in-stock" : "out-of-stock"}`}
+                    >
                       {p.in_stock ? "● In stock" : "○ Out of stock"}
                     </span>
                     <div className="product-bottom">
@@ -850,10 +952,20 @@ function StorePage() {
           )}
 
           {store.products.length === 0 && (
-            <div className="empty" style={{ marginTop: 40, border: "1px solid var(--line)", borderRadius: 8 }}>
+            <div
+              className="empty"
+              style={{
+                marginTop: 40,
+                border: "1px solid var(--line)",
+                borderRadius: 8,
+              }}
+            >
               <ShoppingBag size={32} style={{ opacity: 0.4 }} />
               <h3>No products yet</h3>
-              <p>This shop has no available products right now. Please check back soon.</p>
+              <p>
+                This shop has no available products right now. Please check back
+                soon.
+              </p>
             </div>
           )}
 
@@ -866,7 +978,10 @@ function StorePage() {
           )}
 
           <div className="mcp-note">
-            <Layers3 size={28} style={{ flexShrink: 0, color: "var(--muted)" }} />
+            <Layers3
+              size={28}
+              style={{ flexShrink: 0, color: "var(--muted)" }}
+            />
             <div>
               <strong>Open to shopping agents.</strong>
               <p>
@@ -1062,7 +1177,13 @@ function Playground({ capabilities }: { capabilities: Capabilities | null }) {
 
           {/* Session controls */}
           {session && (
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginBottom: 8,
+              }}
+            >
               <button
                 type="button"
                 className="text-link"
@@ -1101,35 +1222,45 @@ function Playground({ capabilities }: { capabilities: Capabilities | null }) {
           )}
 
           <div className="search-results">
-            {filtered.map((p) => (
-              <button
-                className="result"
-                disabled={busy}
-                onClick={() => void startQuote(p)}
-                key={p.product_id}
-              >
-                <div className="result-left">
-                  {p.image_url && (
-                    <img
-                      className="result-thumb"
-                      src={p.image_url}
-                      alt={p.title}
-                      loading="lazy"
-                    />
-                  )}
-                  <div>
-                    <strong>{p.title}</strong>
-                    <span>{p.store_name}</span>
+            {filtered.map((p) => {
+              const thumbImg = resolveProductImage(p.title, p.image_url);
+              return (
+                <button
+                  className="result"
+                  disabled={busy}
+                  onClick={() => void startQuote(p)}
+                  key={p.product_id}
+                >
+                  <div className="result-left">
+                    {thumbImg && (
+                      <img
+                        className="result-thumb"
+                        src={thumbImg}
+                        alt={p.title}
+                        loading="lazy"
+                      />
+                    )}
+                    <div>
+                      <strong>{p.title}</strong>
+                      <span>{p.store_name}</span>
+                    </div>
                   </div>
-                </div>
-                <span>
-                  ${p.price}
-                  <ArrowRight size={17} />
-                </span>
-              </button>
-            ))}
+                  <span>
+                    ${p.price}
+                    <ArrowRight size={17} />
+                  </span>
+                </button>
+              );
+            })}
             {filtered.length === 0 && (
-              <p style={{ color: "var(--muted)", fontSize: 13, padding: "20px 0", textAlign: "center" }}>
+              <p
+                style={{
+                  color: "var(--muted)",
+                  fontSize: 13,
+                  padding: "20px 0",
+                  textAlign: "center",
+                }}
+              >
                 No matching products. Try another search.
               </p>
             )}
@@ -1145,11 +1276,11 @@ function Playground({ capabilities }: { capabilities: Capabilities | null }) {
             <div className="quote">
               <span className="eyebrow">YOUR SERVER-VERIFIED QUOTE</span>
               <div className="quote-head">
-                {chosen?.image_url && (
+                {resolveProductImage(chosen?.title, chosen?.image_url) && (
                   <img
                     className="result-thumb"
-                    src={chosen.image_url}
-                    alt={chosen.title}
+                    src={resolveProductImage(chosen?.title, chosen?.image_url)!}
+                    alt={chosen?.title}
                     loading="lazy"
                   />
                 )}
@@ -1275,8 +1406,7 @@ function Receipt() {
     return () => controller.abort();
   }, [params]);
 
-  const isSuccess =
-    result?.status === "paid" || result?.status === "shipped";
+  const isSuccess = result?.status === "paid" || result?.status === "shipped";
 
   return (
     <div className="page narrow">
@@ -1295,16 +1425,17 @@ function Receipt() {
         </div>
       )}
 
-      {!isSuccess && !error && result && (
-        <h1>Order status.</h1>
-      )}
+      {!isSuccess && !error && result && <h1>Order status.</h1>}
 
       {!result && !error && (
         <div style={{ marginTop: 24 }}>
           <p role="status" style={{ color: "var(--muted)", fontSize: 14 }}>
             Checking your order…
           </p>
-          <div className="skeleton" style={{ height: 160, marginTop: 16, borderRadius: 8 }} />
+          <div
+            className="skeleton"
+            style={{ height: 160, marginTop: 16, borderRadius: 8 }}
+          />
         </div>
       )}
 

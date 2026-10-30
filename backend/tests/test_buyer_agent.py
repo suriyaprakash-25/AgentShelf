@@ -165,6 +165,7 @@ def test_failed_model_releases_lease_without_persisting_partial_tools(socket_ser
 def test_chat_missing_provider_and_personal_input_are_safe(db_clean, monkeypatch):
     _, session, _ = fixture_data()
     monkeypatch.setattr(get_settings(), "anthropic_api_key", None)
+    monkeypatch.setattr(get_settings(), "gemini_api_key", None)
     with TestClient(create_app()) as client:
         response = client.post(
             "/api/playground/chat",

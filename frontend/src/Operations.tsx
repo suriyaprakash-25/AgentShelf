@@ -98,7 +98,8 @@ export function Operations() {
   }, []);
 
   async function retry(id: string) {
-    if (!confirm("Retry this failed job with its existing identifiers?")) return;
+    if (!confirm("Retry this failed job with its existing identifiers?"))
+      return;
     setBusy(true);
     setError("");
     try {
@@ -149,7 +150,15 @@ export function Operations() {
   return (
     <div className="page">
       {/* Page header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+          gap: 16,
+        }}
+      >
         <div>
           <span className="eyebrow">OPERATIONS DASHBOARD</span>
           <h1 style={{ marginBottom: 8 }}>Review and recover.</h1>
@@ -157,7 +166,14 @@ export function Operations() {
             ← Seller dashboard
           </Link>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: 6,
+          }}
+        >
           <button
             className="button secondary small"
             disabled={busy}
@@ -195,17 +211,26 @@ export function Operations() {
         <>
           {/* Summary header cards */}
           <div className="ops-header">
-            <div className={`ops-stat ${data.failed_total > 0 ? "error" : "ok"}`}>
-              <AlertTriangle size={18} style={{ marginBottom: 6, opacity: 0.7 }} />
+            <div
+              className={`ops-stat ${data.failed_total > 0 ? "error" : "ok"}`}
+            >
+              <AlertTriangle
+                size={18}
+                style={{ marginBottom: 6, opacity: 0.7 }}
+              />
               <strong>{data.failed_total}</strong>
               <span>Failed Jobs</span>
             </div>
-            <div className={`ops-stat ${data.workers.length === 0 ? "error" : "ok"}`}>
+            <div
+              className={`ops-stat ${data.workers.length === 0 ? "error" : "ok"}`}
+            >
               <Server size={18} style={{ marginBottom: 6, opacity: 0.7 }} />
               <strong>{data.workers.length}</strong>
               <span>Active Workers</span>
             </div>
-            <div className={`ops-stat ${data.adjustments.length > 0 ? "warning" : "ok"}`}>
+            <div
+              className={`ops-stat ${data.adjustments.length > 0 ? "warning" : "ok"}`}
+            >
               <GitMerge size={18} style={{ marginBottom: 6, opacity: 0.7 }} />
               <strong>{data.adjustments.length}</strong>
               <span>Pending Adjustments</span>
@@ -259,7 +284,14 @@ export function Operations() {
           {/* Failed jobs */}
           <section style={{ marginTop: 32 }}>
             <h2>Failed jobs ({data.failed_total})</h2>
-            <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 16, lineHeight: 1.6 }}>
+            <p
+              style={{
+                fontSize: 13,
+                color: "var(--muted)",
+                marginBottom: 16,
+                lineHeight: 1.6,
+              }}
+            >
               Showing up to 100 recent failures. Provider delivery may have
               succeeded before an acknowledgement was lost — review before
               retrying.
@@ -267,20 +299,44 @@ export function Operations() {
             {!data.failed_jobs.length ? (
               <p
                 className="notice"
-                style={{ background: "var(--color-success-bg)", color: "var(--color-success-text)", borderLeft: "3px solid var(--color-success-border)" }}
+                style={{
+                  background: "var(--color-success-bg)",
+                  color: "var(--color-success-text)",
+                  borderLeft: "3px solid var(--color-success-border)",
+                }}
               >
                 No failed jobs to review.
               </p>
             ) : (
               <div style={{ display: "grid", gap: 12 }}>
                 {data.failed_jobs.map((job) => (
-                  <section className="panel" key={job.id} style={{ display: "grid", gap: 10 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+                  <section
+                    className="panel"
+                    key={job.id}
+                    style={{ display: "grid", gap: 10 }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        gap: 12,
+                        flexWrap: "wrap",
+                      }}
+                    >
                       <div>
-                        <strong style={{ fontSize: 14, fontFamily: "Manrope, sans-serif" }}>
+                        <strong
+                          style={{
+                            fontSize: 14,
+                            fontFamily: "Manrope, sans-serif",
+                          }}
+                        >
                           {job.kind}
                         </strong>
-                        <span className="badge failed" style={{ marginLeft: 10 }}>
+                        <span
+                          className="badge failed"
+                          style={{ marginLeft: 10 }}
+                        >
                           Failed
                         </span>
                       </div>
@@ -292,7 +348,15 @@ export function Operations() {
                         Retry job
                       </button>
                     </div>
-                    <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12, color: "var(--muted)" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 16,
+                        flexWrap: "wrap",
+                        fontSize: 12,
+                        color: "var(--muted)",
+                      }}
+                    >
                       <span>
                         <strong>Code:</strong> {job.code}
                       </span>
@@ -301,7 +365,13 @@ export function Operations() {
                       </span>
                       <span
                         title={job.id}
-                        style={{ fontFamily: "monospace", fontSize: 11, background: "#eff1e6", padding: "2px 6px", borderRadius: 4 }}
+                        style={{
+                          fontFamily: "monospace",
+                          fontSize: 11,
+                          background: "#eff1e6",
+                          padding: "2px 6px",
+                          borderRadius: 4,
+                        }}
                       >
                         {job.id.slice(0, 16)}…
                       </span>
@@ -319,7 +389,10 @@ export function Operations() {
             {!data.adjustments.length ? (
               <p
                 className="notice"
-                style={{ background: "var(--color-success-bg)", color: "var(--color-success-text)" }}
+                style={{
+                  background: "var(--color-success-bg)",
+                  color: "var(--color-success-text)",
+                }}
               >
                 No refunds or disputes recorded.
               </p>
@@ -327,20 +400,47 @@ export function Operations() {
               <div style={{ display: "grid", gap: 12 }}>
                 {data.adjustments.map((item) => (
                   <section className="panel" key={item.resource_id}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-                      <strong style={{ fontFamily: "Manrope, sans-serif", fontSize: 14 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        gap: 8,
+                      }}
+                    >
+                      <strong
+                        style={{
+                          fontFamily: "Manrope, sans-serif",
+                          fontSize: 14,
+                        }}
+                      >
                         {item.kind}
                       </strong>
                       <StatusBadge value={item.status} />
                     </div>
-                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "var(--muted)",
+                        marginTop: 4,
+                      }}
+                    >
                       Order {item.order_id.slice(0, 8)}
                       {item.amount_minor !== null
                         ? ` · $${(item.amount_minor / 100).toFixed(2)} USD`
                         : ""}
                     </div>
                     <div
-                      style={{ fontFamily: "monospace", fontSize: 11, background: "#eff1e6", padding: "3px 8px", borderRadius: 4, width: "fit-content", color: "var(--muted)" }}
+                      style={{
+                        fontFamily: "monospace",
+                        fontSize: 11,
+                        background: "#eff1e6",
+                        padding: "3px 8px",
+                        borderRadius: 4,
+                        width: "fit-content",
+                        color: "var(--muted)",
+                      }}
                     >
                       {item.resource_id}
                     </div>
@@ -353,7 +453,10 @@ export function Operations() {
             {!data.orders.length ? (
               <p
                 className="notice"
-                style={{ background: "var(--color-success-bg)", color: "var(--color-success-text)" }}
+                style={{
+                  background: "var(--color-success-bg)",
+                  color: "var(--color-success-text)",
+                }}
               >
                 No payment orders awaiting review.
               </p>
@@ -361,13 +464,32 @@ export function Operations() {
               <div style={{ display: "grid", gap: 12 }}>
                 {data.orders.map((order) => (
                   <section className="panel" key={order.id}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-                      <strong style={{ fontFamily: "Manrope, sans-serif", fontSize: 14 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        gap: 8,
+                      }}
+                    >
+                      <strong
+                        style={{
+                          fontFamily: "Manrope, sans-serif",
+                          fontSize: 14,
+                        }}
+                      >
                         Order {order.id.slice(0, 8)}
                       </strong>
                       <StatusBadge value={order.status} />
                     </div>
-                    <p style={{ fontSize: 12, color: "var(--muted)", margin: "4px 0" }}>
+                    <p
+                      style={{
+                        fontSize: 12,
+                        color: "var(--muted)",
+                        margin: "4px 0",
+                      }}
+                    >
                       Error code: {order.code}
                     </p>
                     <p style={{ fontSize: 12, margin: "4px 0" }}>
@@ -385,15 +507,21 @@ export function Operations() {
                               String(form.get("provider_id") || ""),
                             );
                           }}
-                          style={{ marginTop: 12, padding: 16, background: "#fafaf5", borderRadius: 8, border: "1px solid var(--line)" }}
+                          style={{
+                            marginTop: 12,
+                            padding: 16,
+                            background: "#fafaf5",
+                            borderRadius: 8,
+                            border: "1px solid var(--line)",
+                          }}
                         >
                           <p
                             className="notice"
                             style={{ marginTop: 0, fontSize: 11 }}
                           >
                             The server checks the order reference, amount and
-                            recipient. Stock remains reserved until payment status is
-                            verified.
+                            recipient. Stock remains reserved until payment
+                            status is verified.
                           </p>
                           <label>
                             PayPal order reference found during provider review

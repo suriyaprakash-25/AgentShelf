@@ -384,9 +384,14 @@ def create_app():
         get_engine().dispose()
 
     application = FastAPI(title="AgentShelf", version="0.1.0", lifespan=lifespan)
+    allowed_origins = [settings.frontend_url]
+    if settings.app_env in {"local", "test"}:
+        allowed_origins = list(
+            dict.fromkeys(allowed_origins + ["http://localhost:5173", "http://127.0.0.1:5173"])
+        )
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=[settings.frontend_url],
+        allow_origins=allowed_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH"],
         allow_headers=[
@@ -427,7 +432,9 @@ def create_app():
             application.add_api_route(path, frontend_page, methods=["GET"], include_in_schema=False)
         application.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
         if (FRONTEND_DIST / "products").is_dir():
-            application.mount("/products", StaticFiles(directory=FRONTEND_DIST / "products"), name="products")
+            application.mount(
+                "/products", StaticFiles(directory=FRONTEND_DIST / "products"), name="products"
+            )
     application.mount("/", transport)
     return application
 

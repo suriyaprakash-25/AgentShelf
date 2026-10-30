@@ -25,11 +25,15 @@ export function ListingStudio({
 }) {
   const [selected, setSelected] = useState("");
   const [listing, setListing] = useState<Listing | null>(null);
-  const [history, setHistory] = useState<{ id: string; status: string; created_at?: string }[]>([]);
+  const [history, setHistory] = useState<
+    { id: string; status: string; created_at?: string }[]
+  >([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [previewFiles, setPreviewFiles] = useState<{ file: File; preview: string }[]>([]);
+  const [previewFiles, setPreviewFiles] = useState<
+    { file: File; preview: string }[]
+  >([]);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -87,7 +91,10 @@ export function ListingStudio({
         f.size <= 5 * 1024 * 1024 &&
         ["image/jpeg", "image/png", "image/webp"].includes(f.type),
     );
-    const combined = [...previewFiles, ...valid.map((file) => ({ file, preview: URL.createObjectURL(file) }))].slice(0, 4);
+    const combined = [
+      ...previewFiles,
+      ...valid.map((file) => ({ file, preview: URL.createObjectURL(file) })),
+    ].slice(0, 4);
     setPreviewFiles(combined);
   }
 
@@ -179,9 +186,16 @@ export function ListingStudio({
     }
   }
 
-  function formatHistoryLabel(item: { id: string; status: string; created_at?: string }): string {
+  function formatHistoryLabel(item: {
+    id: string;
+    status: string;
+    created_at?: string;
+  }): string {
     const date = item.created_at
-      ? new Date(item.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+      ? new Date(item.created_at).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        })
       : item.id.slice(0, 8);
     const statusLabel =
       item.status === "queued"
@@ -196,10 +210,26 @@ export function ListingStudio({
 
   return (
     <section className="panel" aria-label="Photo listing studio">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: 8,
+        }}
+      >
         <div>
-          <h2 style={{ marginTop: 0, marginBottom: 6 }}>Turn photos into a listing</h2>
-          <p style={{ fontSize: 12, color: "var(--muted)", margin: 0, lineHeight: 1.6 }}>
+          <h2 style={{ marginTop: 0, marginBottom: 6 }}>
+            Turn photos into a listing
+          </h2>
+          <p
+            style={{
+              fontSize: 12,
+              color: "var(--muted)",
+              margin: 0,
+              lineHeight: 1.6,
+            }}
+          >
             Upload product photos — AI drafts the title, description and a
             suggested price. You review everything before publishing.
           </p>
@@ -218,11 +248,18 @@ export function ListingStudio({
 
       {/* Upload form */}
       {!listing && (
-        <form className="seller-form" onSubmit={draft} style={{ marginTop: 16 }}>
+        <form
+          className="seller-form"
+          onSubmit={draft}
+          style={{ marginTop: 16 }}
+        >
           {/* Drag-and-drop upload zone */}
           <div
             className={`upload-zone ${dragging ? "dragging" : ""}`}
-            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
             onDragLeave={() => setDragging(false)}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
@@ -263,7 +300,10 @@ export function ListingStudio({
                   <button
                     type="button"
                     className="upload-preview-remove"
-                    onClick={(e) => { e.stopPropagation(); removePreview(i); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removePreview(i);
+                    }}
                     aria-label={`Remove photo ${i + 1}`}
                   >
                     <X size={10} />
@@ -277,7 +317,10 @@ export function ListingStudio({
           {busy && uploadProgress > 0 && uploadProgress < 100 && (
             <div>
               <div className="upload-progress">
-                <div className="upload-progress-bar" style={{ width: `${uploadProgress}%` }} />
+                <div
+                  className="upload-progress-bar"
+                  style={{ width: `${uploadProgress}%` }}
+                />
               </div>
               <span style={{ fontSize: 11, color: "var(--muted)" }}>
                 Uploading… {uploadProgress}%
@@ -308,7 +351,9 @@ export function ListingStudio({
       {/* Draft history select */}
       {history.length > 0 && !listing && (
         <label style={{ marginTop: 16, display: "grid", gap: 6 }}>
-          <span style={{ fontSize: 12, fontWeight: 600 }}>Review a recent draft</span>
+          <span style={{ fontSize: 12, fontWeight: 600 }}>
+            Review a recent draft
+          </span>
           <select
             value={selected}
             onChange={(e) => {
@@ -332,7 +377,8 @@ export function ListingStudio({
         <div className="notice" role="status">
           <strong>⏳ AI is generating your draft…</strong>
           <p style={{ margin: "4px 0 0", fontSize: 11 }}>
-            This usually takes 15–30 seconds. You can leave and come back — your draft will be waiting.
+            This usually takes 15–30 seconds. You can leave and come back — your
+            draft will be waiting.
           </p>
         </div>
       )}
@@ -363,11 +409,23 @@ export function ListingStudio({
 
       {/* Draft review & publish form */}
       {listing?.status === "drafted" && listing.draft && (
-        <form key={listing.id} className="seller-form" onSubmit={publish} style={{ marginTop: 20 }}>
+        <form
+          key={listing.id}
+          className="seller-form"
+          onSubmit={publish}
+          style={{ marginTop: 20 }}
+        >
           {/* Photo review */}
           {listing.media_urls.length > 0 && (
             <div>
-              <span style={{ fontSize: 12, fontWeight: 600, display: "block", marginBottom: 8 }}>
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  display: "block",
+                  marginBottom: 8,
+                }}
+              >
                 Your photos
               </span>
               <div className="listing-photos">
@@ -378,7 +436,11 @@ export function ListingStudio({
                     alt="Uploaded product photo"
                     width="120"
                     height="120"
-                    style={{ objectFit: "cover", borderRadius: 8, border: "1px solid var(--line)" }}
+                    style={{
+                      objectFit: "cover",
+                      borderRadius: 8,
+                      border: "1px solid var(--line)",
+                    }}
                   />
                 ))}
               </div>
@@ -390,7 +452,13 @@ export function ListingStudio({
             <strong>Suggested price:</strong> $
             {(listing.draft.suggested_price_minor / 100).toFixed(2)} USD
             {listing.draft.price_rationale && (
-              <p style={{ margin: "4px 0 0", fontSize: 11, color: "var(--muted)" }}>
+              <p
+                style={{
+                  margin: "4px 0 0",
+                  fontSize: 11,
+                  color: "var(--muted)",
+                }}
+              >
                 {listing.draft.price_rationale}
               </p>
             )}
@@ -399,7 +467,15 @@ export function ListingStudio({
           {/* AI questions as callout cards */}
           {listing.draft.questions?.length > 0 && (
             <div>
-              <span style={{ fontSize: 12, fontWeight: 600, display: "block", marginBottom: 6, color: "var(--muted)" }}>
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  display: "block",
+                  marginBottom: 6,
+                  color: "var(--muted)",
+                }}
+              >
                 AI has some questions — consider them when editing:
               </span>
               {listing.draft.questions.map((q) => (
@@ -439,7 +515,9 @@ export function ListingStudio({
                 max="1000000"
                 step="0.01"
                 required
-                defaultValue={(listing.draft.suggested_price_minor / 100).toFixed(2)}
+                defaultValue={(
+                  listing.draft.suggested_price_minor / 100
+                ).toFixed(2)}
               />
             </div>
           </label>
@@ -456,8 +534,8 @@ export function ListingStudio({
             />
           </label>
           <label className="consent-label seller-form">
-            <input type="checkbox" name="confirm" required />
-            I reviewed these details and confirm my price and stock.
+            <input type="checkbox" name="confirm" required />I reviewed these
+            details and confirm my price and stock.
           </label>
           <button className="button" disabled={busy}>
             {busy ? "Publishing…" : "Confirm and publish listing"}

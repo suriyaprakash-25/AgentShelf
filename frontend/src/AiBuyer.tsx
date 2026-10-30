@@ -174,11 +174,19 @@ export function AiBuyer({
       {/* Privacy notice */}
       <div
         className="notice"
-        style={{ marginTop: 0, display: "flex", gap: 8, alignItems: "flex-start" }}
+        style={{
+          marginTop: 0,
+          display: "flex",
+          gap: 8,
+          alignItems: "flex-start",
+        }}
         role="note"
       >
         <span style={{ fontSize: 14 }}>🔒</span>
-        <span>Keep personal details out of chat. The agent only receives your budget and shipping country.</span>
+        <span>
+          Keep personal details out of chat. The agent only receives your budget
+          and shipping country.
+        </span>
       </div>
 
       {!aiEnabled && (
@@ -229,11 +237,7 @@ export function AiBuyer({
               className={`chat-avatar ${item.from === "You" ? "user-avatar" : ""}`}
               aria-hidden="true"
             >
-              {item.from === "You" ? (
-                <User size={12} />
-              ) : (
-                <Bot size={12} />
-              )}
+              {item.from === "You" ? <User size={12} /> : <Bot size={12} />}
             </div>
             <div
               className={`chat-bubble ${item.from === "You" ? "user" : "agent"}`}
@@ -245,7 +249,9 @@ export function AiBuyer({
         {/* Typing indicator */}
         {busy && (
           <div className="typing-indicator" aria-label="Agent is thinking">
-            <span /><span /><span />
+            <span />
+            <span />
+            <span />
           </div>
         )}
         <div ref={bottomRef} />
@@ -291,8 +297,11 @@ export function AiBuyer({
             {quote.title} × {quote.qty}
           </h3>
           <p style={{ marginBottom: 4 }}>
-            Total: <strong>${quote.total} {quote.currency}</strong>, including
-            ${quote.shipping} shipping to {quote.ship_to_country}.
+            Total:{" "}
+            <strong>
+              ${quote.total} {quote.currency}
+            </strong>
+            , including ${quote.shipping} shipping to {quote.ship_to_country}.
           </p>
           <p style={{ fontSize: 11, color: "var(--muted)" }}>
             Quote expires at {new Date(quote.expires_at).toLocaleTimeString()}.
@@ -339,14 +348,24 @@ export function AiBuyer({
           >
             MCP tool activity ({trace.length})
           </summary>
-          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+          <div
+            style={{
+              marginTop: 8,
+              display: "flex",
+              flexDirection: "column",
+              gap: 4,
+            }}
+          >
             {trace.map((event, i) => (
               <div key={i} className="tool-event">
                 <span className="tool-badge">
                   {event.type === "tool_call" ? "→" : "←"}
                 </span>
                 <span className="tool-name">
-                  {String(event.name ?? (event.type === "tool_result" ? "result" : event.type))}
+                  {String(
+                    event.name ??
+                      (event.type === "tool_result" ? "result" : event.type),
+                  )}
                 </span>
               </div>
             ))}

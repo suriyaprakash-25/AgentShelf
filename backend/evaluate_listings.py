@@ -134,7 +134,11 @@ def run_dataset(dataset, dataset_hash, directory):
     gemini_key = getattr(settings, "gemini_api_key", None)
     anthropic_key = getattr(settings, "anthropic_api_key", None)
     use_gemini = bool(gemini_key and not anthropic_key)
-    active_model = getattr(settings, "gemini_model", "gemini-2.5-flash") if use_gemini else getattr(settings, "anthropic_model", "claude-3-7-sonnet-latest")
+    active_model = (
+        getattr(settings, "gemini_model", "gemini-2.5-flash")
+        if use_gemini
+        else getattr(settings, "anthropic_model", "claude-3-7-sonnet-latest")
+    )
     if not re.fullmatch(r"[a-zA-Z0-9._:/-]{1,120}", active_model):
         raise ValueError("MODEL_INVALID")
     images, fingerprints = prepare_images(dataset, directory)

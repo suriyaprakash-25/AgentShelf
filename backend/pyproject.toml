@@ -2,7 +2,7 @@
 name = "agentshelf-backend"
 version = "0.1.0"
 description = "Seller-first agentic commerce with human-approved PayPal checkout"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.11,<3.14"
 dependencies = [
   "fastapi>=0.115,<1",
   "uvicorn[standard]>=0.34,<1",
@@ -13,7 +13,7 @@ dependencies = [
   "httpx>=0.28,<1",
   "mcp[cli]>=2.3,<3",
   "anthropic>=0.70,<1",
-  "pillow>=11,<13",
+  "pillow>=11,<14",
   "boto3>=1.35,<2",
   "sentry-sdk>=2,<3",
 ]

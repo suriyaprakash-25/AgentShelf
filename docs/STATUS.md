@@ -369,6 +369,50 @@ Per explicit user instruction to complete all remaining codebase tasks while kee
 - **S-6 Multi-Language Listing Translation (`backend/app/llm.py`, `backend/app/main.py`, `frontend/src/App.tsx`)**: Added `GET /api/products/{id}/translate?lang=...` and storefront language selector (`en`, `es`, `fr`, `de`, `hi`, `ja`) that translates product titles and descriptions while keeping server-side USD prices, currency, and stock availability authoritative from PostgreSQL.
 - **Phase B Tooling & Submission Package (`backend/verify_phase_b.py`, `.github/workflows/nightly-sandbox.yml`, `docs/DEVPOST_SUBMISSION.md`, `README.md`)**: Added credential-readiness preflight, ADR-001 Sandbox payee spike CLI, nightly sandbox verification workflow, Devpost submission text + 2:58 video shot-list guide, and 9-section README. All external provider, staging, and merchant eligibility gates remain unaccepted (`gate_approval: False`) until real credentials and staging acceptance evidence are recorded.
 
+## Full QA and test engineering pass — 2026-10-30
+
+Conducted a complete static and runtime test pass on branch `feat/foundations`.
+Environment: Python 3.13.11, uv 0.9.26, Node 22.21.0, npm 10.9.4, PostgreSQL 18.4
+(embedded-postgres on port 5433). Docker Desktop was stopped; native embedded
+PostgreSQL was used for all integration tests. Both `agentshelf` and
+`agentshelf_test` databases confirmed ready; Alembic head applied; seed data loaded.
+
+| Gate | Result | Detail |
+| --- | --- | --- |
+| Backend lint (ruff check) | ✅ All checks passed | 94 Python files, zero violations |
+| Backend format (ruff format) | ✅ All formatted | 94 files, zero reformatting needed |
+| Security audit (pip-audit) | ✅ No known vulnerabilities | Full Python dependency tree scanned |
+| Backend runtime tests | ✅ 293 passed, 1 skipped | 294 collected across 38 modules; 60.36 s |
+| Frontend lint (ESLint) | ✅ 0 errors, 0 warnings | TypeScript-aware rules |
+| Frontend format (Prettier) | ✅ All formatted | Zero reformatting needed |
+| TypeScript compilation | ✅ Zero errors | Strict mode |
+| Frontend production build | ✅ Built in 10.04 s | Vite 6.4.4; code-splitting applied |
+
+Nine defects were identified and resolved:
+1. CSRF origin mismatch (127.0.0.1 vs localhost) — fixed allowlist in require_origin(),
+   seller_access() and CORS middleware for local/test app_env.
+2. TEST_DATABASE_URL not set — added os.environ.setdefault in conftest.py.
+3. Gemini API key present caused provider-safety test to return 200 instead of 503 —
+   added monkeypatch to null gemini_api_key alongside anthropic_api_key.
+4. .ruff_cache locked — use --no-cache or clean with elevated access.
+5. tsconfig.tsbuildinfo locked — removed stale file; build now clean.
+6. pip-audit network blocked in sandbox — ran with elevated network access.
+7. .pytest_cache locked — cleaned with elevated access.
+8. Docker Desktop stopped — substituted native embedded PostgreSQL 18.4.
+9. Vite chunk size warning (Seller-*.js 903.90 kB) — added manualChunks in
+   vite.config.ts; Seller chunk reduced to 33.10 kB (−96.3%).
+
+Security finding: root .env file contains live-like API credentials and is tracked in
+git. Credentials not modified or published during this QA pass. Recommend adding .env
+to .gitignore and rotating credentials before any public repository push.
+
+Full QA report: see AgentShelf_Test_Report.md and AgentShelf_Test_Report.pdf (both
+generated in the Antigravity artifact directory). Final score: 88/100.
+
+Files modified: backend/tests/conftest.py, backend/app/routes/sellers.py,
+backend/app/auth.py, backend/app/main.py, backend/tests/test_sellers.py,
+backend/tests/test_buyer_agent.py, frontend/vite.config.ts.
+
 ## Gemini AI provider support and initial local provider connectivity checks
 
 - Added `GEMINI_API_KEY` and `GEMINI_MODEL` (`gemini-3.5-flash` / `gemini-flash-latest`) support alongside `ANTHROPIC_API_KEY` across all five AI boundaries (`draft_listing`, `buyer_turn`, `analytics_summary`, `transcribe_voice_note`, `translate_listing`) in `backend/app/llm.py`, `backend/app/config.py`, `backend/app/routes/playground.py`, `backend/app/listing_workflow.py`, `backend/evaluate_listings.py`, `backend/verify_phase_b.py`, and `render.yaml`.

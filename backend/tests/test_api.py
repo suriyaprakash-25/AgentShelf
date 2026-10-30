@@ -37,9 +37,13 @@ def test_health_store_and_server_quote(db_clean):
         assert result.json()["currency"] == "USD"
 
 
-def test_missing_paypal_credentials_is_explicit():
+def test_missing_paypal_credentials_is_explicit(monkeypatch):
     import uuid
 
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "paypal_client_id", "")
+    monkeypatch.setattr(get_settings(), "paypal_client_secret", "")
     with TestClient(create_app()) as client:
         result = client.post(
             "/api/checkouts", json={"quote_id": str(uuid.uuid4()), "session_id": str(uuid.uuid4())}

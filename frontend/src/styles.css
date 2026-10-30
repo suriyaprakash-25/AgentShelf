@@ -197,7 +197,10 @@ nav a.active {
   font-size: 13px;
   font-weight: 600;
   line-height: 1.4;
-  transition: background-color var(--transition-base), border-color var(--transition-base), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-base),
+    border-color var(--transition-base),
+    transform var(--transition-fast);
 }
 .button:hover:not(:disabled) {
   background: var(--green-hover);
@@ -361,8 +364,13 @@ h3 {
   background: var(--green);
   color: white;
 }
-.toast-icon { flex-shrink: 0; margin-top: 1px; }
-.toast-message { flex: 1; }
+.toast-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.toast-message {
+  flex: 1;
+}
 .toast-close {
   background: transparent;
   border: 0;
@@ -374,32 +382,42 @@ h3 {
   font-size: 16px;
   line-height: 1;
 }
-.toast-close:hover { opacity: 1; }
+.toast-close:hover {
+  opacity: 1;
+}
 @keyframes toastIn {
-  from { opacity: 0; transform: translateY(16px) scale(0.95); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 @keyframes toastOut {
-  to { opacity: 0; transform: translateY(8px) scale(0.95); }
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.95);
+  }
 }
 
 /* ============================================================
    SKELETON LOADING
    ============================================================ */
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    #e8e9de 25%,
-    #f0f1e6 50%,
-    #e8e9de 75%
-  );
+  background: linear-gradient(90deg, #e8e9de 25%, #f0f1e6 50%, #e8e9de 75%);
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.5s ease infinite;
   border-radius: var(--radius-sm);
 }
 @keyframes skeleton-shimmer {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 .skeleton-card {
   border: 1px solid var(--line);
@@ -434,8 +452,15 @@ h3 {
   animation: dotPulse 2.2s ease-in-out infinite;
 }
 @keyframes dotPulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.55; transform: scale(0.8); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.8);
+  }
 }
 .hero-grid {
   display: grid;
@@ -500,7 +525,9 @@ h3 {
       #759e9b 29px 30px,
       transparent 31px 62px
     );
-  background-size: 36px 42px, 62px 62px;
+  background-size:
+    36px 42px,
+    62px 62px;
   border: 12px solid #c8cdba;
   box-shadow: 15px 20px 40px #1d352c30;
 }
@@ -529,8 +556,13 @@ h3 {
   animation: floatCard 4s ease-in-out infinite;
 }
 @keyframes floatCard {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-6px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }
 .card-icon {
   position: absolute;
@@ -594,7 +626,7 @@ h3 {
   gap: 8px;
 }
 .strip span::before {
-  content: '✦';
+  content: "✦";
   font-size: 9px;
   color: #84983d;
 }
@@ -618,7 +650,9 @@ h3 {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--surface-card);
-  transition: box-shadow var(--transition-base), transform var(--transition-base);
+  transition:
+    box-shadow var(--transition-base),
+    transform var(--transition-base);
 }
 .stat:hover {
   box-shadow: var(--shadow-card);
@@ -658,7 +692,10 @@ h3 {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   padding: 25px;
-  transition: border-color var(--transition-base), box-shadow var(--transition-base), transform var(--transition-base);
+  transition:
+    border-color var(--transition-base),
+    box-shadow var(--transition-base),
+    transform var(--transition-base);
 }
 .steps-grid article:hover {
   border-color: #b8c9a0;
@@ -768,7 +805,10 @@ footer > span {
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--surface-card);
-  transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base),
+    border-color var(--transition-base);
 }
 .product-card:hover {
   transform: translateY(-4px);
@@ -802,25 +842,42 @@ footer > span {
   border: 7px solid #c7cebb;
   box-shadow: 12px 15px 25px #1d352c25;
 }
-.art-1 { background: #e9ded0; }
+.art-1 {
+  background: #e9ded0;
+}
 .art-1 .art-shape {
-  width: 130px; height: 130px;
+  width: 130px;
+  height: 130px;
   border-radius: 50%;
   background-color: #a56146;
   border: 8px solid #d0a68a;
-  background-image: repeating-radial-gradient(circle, transparent 0 10px, #e6cab5 11px 12px);
+  background-image: repeating-radial-gradient(
+    circle,
+    transparent 0 10px,
+    #e6cab5 11px 12px
+  );
 }
-.art-2 { background: #e9e5d7; }
+.art-2 {
+  background: #e9e5d7;
+}
 .art-2 .art-shape {
-  width: 95px; height: 190px;
+  width: 95px;
+  height: 190px;
   background-color: #bea587;
-  background-image: repeating-linear-gradient(0deg, transparent 0 15px, #765245 16px 19px);
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0 15px,
+    #765245 16px 19px
+  );
   border-color: #d5cbb7;
 }
-.art-3 { background: #e1e7de; }
+.art-3 {
+  background: #e1e7de;
+}
 .art-3 .art-shape {
   background: #fffaf0;
-  width: 140px; height: 170px;
+  width: 140px;
+  height: 170px;
   border: 6px solid #d4c8ae;
   background-image:
     radial-gradient(ellipse at 30% 30%, #789b75 0 12%, transparent 13%),
@@ -872,13 +929,17 @@ footer > span {
   border-radius: 6px;
   padding: 8px 14px;
   cursor: pointer;
-  transition: background-color var(--transition-base), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-base),
+    transform var(--transition-fast);
   text-decoration: none;
 }
 .product-cta:hover {
   background: var(--green-hover);
 }
-.product-cta:active { transform: scale(0.97); }
+.product-cta:active {
+  transform: scale(0.97);
+}
 
 /* Stock badge */
 .stock-badge {
@@ -996,7 +1057,9 @@ select {
   background: white;
   color: var(--green);
   font-size: 13px;
-  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+  transition:
+    border-color var(--transition-base),
+    box-shadow var(--transition-base);
 }
 input:focus,
 select:focus {
@@ -1014,7 +1077,9 @@ textarea {
   background: white;
   color: var(--green);
   font-size: 13px;
-  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+  transition:
+    border-color var(--transition-base),
+    box-shadow var(--transition-base);
   resize: vertical;
   min-height: 80px;
   field-sizing: content;
@@ -1059,7 +1124,9 @@ input[type="file"]::file-selector-button:hover {
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   padding-left: 12px;
-  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+  transition:
+    border-color var(--transition-base),
+    box-shadow var(--transition-base);
 }
 .search-label:focus-within {
   border-color: #8aac6a;
@@ -1094,7 +1161,9 @@ input[type="file"]::file-selector-button:hover {
   background: transparent;
   text-align: left;
   color: var(--green);
-  transition: background-color var(--transition-base), padding-left var(--transition-base);
+  transition:
+    background-color var(--transition-base),
+    padding-left var(--transition-base);
   border-radius: 0;
 }
 .result:hover {
@@ -1128,8 +1197,14 @@ input[type="file"]::file-selector-button:hover {
   animation: slideUp 0.25s ease;
 }
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .quote dl {
   font-size: 12px;
@@ -1256,8 +1331,14 @@ input[type="file"]::file-selector-button:hover {
   animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 @keyframes scaleIn {
-  from { transform: scale(0.5); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 .receipt-amount {
   font-size: 32px;
@@ -1279,9 +1360,15 @@ input[type="file"]::file-selector-button:hover {
   padding: 8px 0;
   border-bottom: 1px solid var(--line);
 }
-.receipt-row:last-child { border-bottom: 0; }
-.receipt-label { color: var(--muted); }
-.receipt-value { font-weight: 600; }
+.receipt-row:last-child {
+  border-bottom: 0;
+}
+.receipt-label {
+  color: var(--muted);
+}
+.receipt-value {
+  font-weight: 600;
+}
 
 /* ============================================================
    CHAT COMPONENT (AiBuyer)
@@ -1334,8 +1421,14 @@ input[type="file"]::file-selector-button:hover {
   animation: bubbleIn 0.2s ease;
 }
 @keyframes bubbleIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .chat-bubble.user {
   background: var(--green);
@@ -1364,11 +1457,23 @@ input[type="file"]::file-selector-button:hover {
   background: var(--muted);
   animation: typingBounce 1.2s ease infinite;
 }
-.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
 @keyframes typingBounce {
-  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
-  40%           { transform: translateY(-6px); opacity: 1; }
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  40% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
 }
 .chat-input-row {
   display: flex;
@@ -1404,15 +1509,42 @@ input[type="file"]::file-selector-button:hover {
   font-weight: 600;
   letter-spacing: 0.3px;
 }
-.badge.draft    { background: var(--badge-draft-bg);    color: var(--badge-draft-text); }
-.badge.live     { background: var(--badge-live-bg);     color: var(--badge-live-text); }
-.badge.archived { background: var(--badge-archived-bg); color: var(--badge-archived-text); }
-.badge.paid     { background: var(--badge-paid-bg);     color: var(--badge-paid-text); }
-.badge.shipped  { background: var(--badge-shipped-bg);  color: var(--badge-shipped-text); }
-.badge.pending  { background: var(--badge-pending-bg);  color: var(--badge-pending-text); }
-.badge.failed   { background: var(--color-error-bg);    color: var(--color-error-text); }
-.badge.queued   { background: var(--badge-pending-bg);  color: var(--badge-pending-text); }
-.badge.published { background: var(--badge-live-bg);    color: var(--badge-live-text); }
+.badge.draft {
+  background: var(--badge-draft-bg);
+  color: var(--badge-draft-text);
+}
+.badge.live {
+  background: var(--badge-live-bg);
+  color: var(--badge-live-text);
+}
+.badge.archived {
+  background: var(--badge-archived-bg);
+  color: var(--badge-archived-text);
+}
+.badge.paid {
+  background: var(--badge-paid-bg);
+  color: var(--badge-paid-text);
+}
+.badge.shipped {
+  background: var(--badge-shipped-bg);
+  color: var(--badge-shipped-text);
+}
+.badge.pending {
+  background: var(--badge-pending-bg);
+  color: var(--badge-pending-text);
+}
+.badge.failed {
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+}
+.badge.queued {
+  background: var(--badge-pending-bg);
+  color: var(--badge-pending-text);
+}
+.badge.published {
+  background: var(--badge-live-bg);
+  color: var(--badge-live-text);
+}
 
 /* ============================================================
    SELLER DASHBOARD
@@ -1464,7 +1596,9 @@ input[type="file"]::file-selector-button:hover {
   border-radius: 0.5rem;
   background: #fff;
   font: inherit;
-  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+  transition:
+    border-color var(--transition-base),
+    box-shadow var(--transition-base);
 }
 .seller-form input:focus,
 .seller-form textarea:focus {
@@ -1581,8 +1715,12 @@ input[type="file"]::file-selector-button:hover {
   backdrop-filter: blur(4px);
 }
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .dialog {
   background: white;
@@ -1594,8 +1732,14 @@ input[type="file"]::file-selector-button:hover {
   animation: dialogIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 @keyframes dialogIn {
-  from { opacity: 0; transform: scale(0.93) translateY(8px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.93) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 .dialog h3 {
   font-size: 20px;
@@ -1646,7 +1790,9 @@ input[type="file"]::file-selector-button:hover {
   padding: 32px 24px;
   text-align: center;
   cursor: pointer;
-  transition: border-color var(--transition-base), background-color var(--transition-base);
+  transition:
+    border-color var(--transition-base),
+    background-color var(--transition-base);
   background: #fafaf5;
 }
 .upload-zone:hover,
@@ -1835,9 +1981,15 @@ input[type="file"]::file-selector-button:hover {
   margin-top: 4px;
   letter-spacing: 0.5px;
 }
-.ops-stat.warning strong { color: #e65100; }
-.ops-stat.error strong   { color: #c62828; }
-.ops-stat.ok strong      { color: var(--badge-live-text); }
+.ops-stat.warning strong {
+  color: #e65100;
+}
+.ops-stat.error strong {
+  color: #c62828;
+}
+.ops-stat.ok strong {
+  color: var(--badge-live-text);
+}
 .worker-badge {
   display: inline-flex;
   align-items: center;
@@ -1847,9 +1999,18 @@ input[type="file"]::file-selector-button:hover {
   font-size: 12px;
   margin: 4px 0;
 }
-.worker-badge.ok      { background: var(--badge-live-bg); color: var(--badge-live-text); }
-.worker-badge.warning { background: var(--badge-pending-bg); color: var(--badge-pending-text); }
-.worker-badge.error   { background: var(--color-error-bg); color: var(--color-error-text); }
+.worker-badge.ok {
+  background: var(--badge-live-bg);
+  color: var(--badge-live-text);
+}
+.worker-badge.warning {
+  background: var(--badge-pending-bg);
+  color: var(--badge-pending-text);
+}
+.worker-badge.error {
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+}
 .ops-refresh {
   display: flex;
   align-items: center;
@@ -2036,7 +2197,10 @@ input[type="file"]::file-selector-button:hover {
   padding: 32px 28px;
   display: flex;
   flex-direction: column;
-  transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base),
+    border-color var(--transition-base);
 }
 .ecosystem-card:hover {
   transform: translateY(-3px);
@@ -2121,7 +2285,9 @@ input[type="file"]::file-selector-button:hover {
   font-size: 13px;
   font-weight: 600;
   color: var(--green);
-  transition: gap var(--transition-fast), color var(--transition-fast);
+  transition:
+    gap var(--transition-fast),
+    color var(--transition-fast);
   margin-top: auto;
 }
 .card-action-link:hover {
@@ -2154,7 +2320,9 @@ input[type="file"]::file-selector-button:hover {
   padding: 28px;
   display: flex;
   flex-direction: column;
-  transition: transform var(--transition-base), box-shadow var(--transition-base);
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base);
 }
 .store-card-featured:hover {
   transform: translateY(-2px);
@@ -2172,7 +2340,7 @@ input[type="file"]::file-selector-button:hover {
   font-size: 10.5px;
   letter-spacing: 1.2px;
   font-weight: 700;
-  color: #6a7764;
+  color: #3d4c38;
   margin-bottom: 6px;
 }
 .store-card-header h3 {
@@ -2233,7 +2401,9 @@ input[type="file"]::file-selector-button:hover {
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 24px 20px;
-  transition: transform var(--transition-base), box-shadow var(--transition-base);
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base);
 }
 .tech-card:hover {
   transform: translateY(-2px);
@@ -2284,7 +2454,9 @@ input[type="file"]::file-selector-button:hover {
   border: 1px solid var(--line);
   border-radius: 9px;
   overflow: hidden;
-  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+  transition:
+    border-color var(--transition-base),
+    box-shadow var(--transition-base);
 }
 .faq-item:hover,
 .faq-item.open {
@@ -2315,7 +2487,9 @@ input[type="file"]::file-selector-button:hover {
 .faq-icon {
   flex-shrink: 0;
   color: var(--muted);
-  transition: transform var(--transition-base), color var(--transition-base);
+  transition:
+    transform var(--transition-base),
+    color var(--transition-base);
 }
 .faq-icon.rotated {
   transform: rotate(180deg);

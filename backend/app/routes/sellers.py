@@ -68,7 +68,10 @@ class OnboardingInput(LinkInput):
 
 
 def require_origin(request):
-    if request.headers.get("origin") != get_settings().frontend_url:
+    allowed_origins = {get_settings().frontend_url}
+    if get_settings().app_env in {"local", "test"}:
+        allowed_origins.update({"http://localhost:5173", "http://127.0.0.1:5173"})
+    if request.headers.get("origin") not in allowed_origins:
         raise DomainError("CSRF_REJECTED", "Open AgentShelf to request sign-in.", 403)
 
 
@@ -207,7 +210,9 @@ def create_product(body: ProductInput, request: Request):
                 .with_for_update()
             )
             if not asset:
-                raise DomainError("MEDIA_NOT_FOUND", "Select an unlisted photo from your account.", 404)
+                raise DomainError(
+                    "MEDIA_NOT_FOUND", "Select an unlisted photo from your account.", 404
+                )
         number = (
             db.scalar(
                 select(func.coalesce(func.max(Product.short_no), 0)).where(
@@ -270,7 +275,9 @@ def update_product(product_id: uuid.UUID, body: ProductPatch, request: Request):
                 .with_for_update()
             )
             if not asset:
-                raise DomainError("MEDIA_NOT_FOUND", "Select an unlisted photo from your account.", 404)
+                raise DomainError(
+                    "MEDIA_NOT_FOUND", "Select an unlisted photo from your account.", 404
+                )
             asset.product_id = product.id
             product.images = [get_settings().public_api_url + f"/api/media/{asset.id}"]
         for key, value in updates.items():

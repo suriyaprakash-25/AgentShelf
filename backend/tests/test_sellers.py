@@ -231,6 +231,7 @@ def test_untrusted_origin_cannot_request_or_redeem_links(db_clean, delivery):
 
 def test_forwarded_ip_isolated_per_client_in_deployed_proxy_mode(db_clean, delivery, monkeypatch):
     monkeypatch.setattr(get_settings(), "app_env", "staging")
+    monkeypatch.setattr(get_settings(), "frontend_url", ORIGIN["origin"])
     with TestClient(create_app(), base_url="https://testserver") as client:
         for i in range(4):
             res = client.post(
