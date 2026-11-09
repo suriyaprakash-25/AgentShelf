@@ -1,6 +1,16 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+// Only the framework shared by every route gets a named vendor chunk. The analytics
+// grid, AG Studio and Sentry are reached through dynamic imports, so leaving them to
+// automatic splitting keeps them out of the landing page's modulepreload list.
+const VENDOR_REACT = [
+  "/node_modules/react/",
+  "/node_modules/react-dom/",
+  "/node_modules/react-router",
+  "/node_modules/scheduler/",
+];
+
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -11,11 +21,12 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          "vendor-react": ["react", "react-dom", "react-router-dom"],
-          "vendor-ag-grid": ["ag-grid-community", "ag-grid-react"],
-          "vendor-ag-studio": ["ag-studio", "ag-studio-react"],
-          "vendor-sentry": ["@sentry/browser"],
+        manualChunks(id) {
+          const path = id.replaceAll("\\", "/");
+          if (VENDOR_REACT.some((segment) => path.includes(segment))) {
+            return "vendor-react";
+          }
+          return undefined;
         },
       },
     },

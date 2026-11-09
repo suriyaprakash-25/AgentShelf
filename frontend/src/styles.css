@@ -1241,7 +1241,8 @@ input[type="file"]::file-selector-button:hover {
 .empty {
   padding: 45px 20px;
   text-align: center;
-  color: #6b785f;
+  /* var(--muted) meets WCAG AA (4.5:1) on the page and panel backgrounds. */
+  color: var(--muted);
 }
 .empty h3 {
   font-size: 15px;
@@ -2187,10 +2188,12 @@ input[type="file"]::file-selector-button:hover {
 }
 .ecosystem-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* minmax(0, 1fr): a card's longest word can never widen the page on phones. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
 }
 .ecosystem-card {
+  min-width: 0;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -2263,9 +2266,16 @@ input[type="file"]::file-selector-button:hover {
   flex-grow: 1;
 }
 .eco-list li {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  display: block;
+  position: relative;
+  padding-left: 25px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.eco-list li > svg:first-child {
+  position: absolute;
+  left: 0;
+  top: 0;
 }
 .eco-list li svg {
   flex-shrink: 0;
@@ -2280,6 +2290,8 @@ input[type="file"]::file-selector-button:hover {
 }
 .card-action-link {
   display: inline-flex;
+  flex-wrap: wrap;
+  max-width: 100%;
   align-items: center;
   gap: 8px;
   font-size: 13px;
@@ -2641,7 +2653,7 @@ input[type="file"]::file-selector-button:hover {
     grid-template-columns: repeat(3, 1fr);
   }
   .ecosystem-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .steps-grid.four-col {
     grid-template-columns: repeat(2, 1fr);

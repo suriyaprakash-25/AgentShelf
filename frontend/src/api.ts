@@ -18,6 +18,13 @@ export type Store = {
   mcp_url: string;
   products: Product[];
 };
+/** Counts measured by the server from live catalog data (GET /api/stats). */
+export type PlatformStats = {
+  sellers: number;
+  live_products: number;
+  seller_countries: number;
+};
+
 export type Capabilities = {
   paypal_mode: string;
   checkout_configured: boolean;

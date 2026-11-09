@@ -151,9 +151,10 @@ test("controlled listing review uses seller price and explicit publication", asy
     buffer: Buffer.from("controlled upload fixture"),
   });
   await page.getByRole("button", { name: "Generate a draft" }).click();
+  // The label is bold, so match the notice as a whole rather than one text node.
   await expect(
-    page.getByText("Suggested price: $45.00 USD.", { exact: false }),
-  ).toBeVisible();
+    page.locator(".notice", { hasText: "Suggested price:" }),
+  ).toContainText("$45.00 USD");
   expect(published).toBeNull();
   await scanAccessibility(page, info);
   await page.getByLabel("Your selling price in USD").fill("39.00");
@@ -165,7 +166,7 @@ test("controlled listing review uses seller price and explicit publication", asy
     .getByRole("button", { name: "Confirm and publish listing" })
     .click();
   await expect(
-    page.getByText("Published. Your product is now in your public store."),
+    page.getByText("Your product is now live in your public store."),
   ).toBeVisible();
   expect(published).toMatchObject({
     confirm: true,

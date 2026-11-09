@@ -191,13 +191,14 @@ export function AiBuyer({
 
       {!aiEnabled && (
         <p className="notice" style={{ borderLeft: "3px solid #c5ab6a" }}>
-          ⚠️ AI chat needs an Anthropic API key. Explore the catalog below to
-          request server-verified quotes directly.
+          ⚠️ AI chat needs a configured AI provider. Explore the catalog below
+          to request server-verified quotes directly.
         </p>
       )}
 
       {/* Chat transcript */}
       <div
+        role="log"
         aria-live="polite"
         aria-label="Chat conversation"
         className="chat-transcript"
