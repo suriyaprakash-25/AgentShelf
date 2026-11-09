@@ -1,0 +1,102 @@
+# Horizontal-scale verification stack (local only, sandbox-safe, no provider secrets):
+#   nginx (round-robin LB) -> 2 stateless web replicas x WEB_CONCURRENCY workers
+#   2 job workers (SKIP LOCKED + LISTEN/NOTIFY)
+#   Postgres primary + streaming hot-standby replica for anonymous catalog reads.
+# Usage: docker compose -f deploy/scale/docker-compose.yml up --build -d
+#        then open http://127.0.0.1:8088 (see docs/RUNBOOK.md "Scale verification").
+name: agentshelf-scale
+
+x-app-env: &app-env
+  APP_ENV: local
+  DATABASE_URL: postgresql+psycopg://agentshelf:scale-local-only@db:5432/agentshelf
+  DATABASE_READ_URL: postgresql+psycopg://agentshelf:scale-local-only@db-replica:5432/agentshelf
+  PUBLIC_API_URL: http://127.0.0.1:8088
+  FRONTEND_URL: http://127.0.0.1:8088
+  PAYPAL_MODE: sandbox
+  MEDIA_BACKEND: local
+  TRUSTED_PROXY_HOPS: "1"
+  SERVICE_SIGNING_KEY: scale-local-only-signing-key
+  PUBLIC_CACHE_SECONDS: "10"
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: agentshelf
+      POSTGRES_USER: agentshelf
+      POSTGRES_PASSWORD: scale-local-only
+      REPLICATION_PASSWORD: replication-local-only
+    command: ["postgres", "-c", "wal_level=replica", "-c", "max_wal_senders=5", "-c", "max_connections=200"]
+    volumes:
+      - ./primary-init.sh:/docker-entrypoint-initdb.d/10-replication.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentshelf -d agentshelf"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  db-replica:
+    image: postgres:17-alpine
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRES_DB: agentshelf
+      POSTGRES_USER: agentshelf
+      REPLICATION_PASSWORD: replication-local-only
+      PGDATA: /var/lib/postgresql/data
+    entrypoint: ["/bin/sh", "/replica-entrypoint.sh"]
+    volumes:
+      - ./replica-entrypoint.sh:/replica-entrypoint.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentshelf -d agentshelf"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  migrate:
+    build: { context: ../.., dockerfile: Dockerfile }
+    image: agentshelf:scale
+    depends_on:
+      db:
+        condition: service_healthy
+    environment: *app-env
+    command: ["sh", "-c", "alembic upgrade head && python seed.py"]
+
+  web:
+    image: agentshelf:scale
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      db-replica:
+        condition: service_healthy
+    environment:
+      <<: *app-env
+      WEB_CONCURRENCY: "2"
+    deploy:
+      replicas: 2
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  worker:
+    image: agentshelf:scale
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment: *app-env
+    command: ["python", "worker.py"]
+    deploy:
+      replicas: 2
+
+  lb:
+    image: nginx:1.28-alpine
+    depends_on:
+      web:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8088:8080"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
