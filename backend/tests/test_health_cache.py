@@ -5,12 +5,12 @@ from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import SQLAlchemyError
 
-from app import main
+from app import db, main
 
 
 def test_healthy_response_checks_database_and_forbids_caching(monkeypatch):
     engine = MagicMock()
-    monkeypatch.setattr(main, "get_engine", lambda: engine)
+    monkeypatch.setattr(db, "get_engine", lambda: engine)
     with TestClient(main.create_app()) as client:
         response = client.get("/healthz")
     assert response.status_code == 200
@@ -24,7 +24,7 @@ def test_healthy_response_checks_database_and_forbids_caching(monkeypatch):
 def test_database_outage_response_forbids_caching_and_private_error(monkeypatch):
     engine = MagicMock()
     engine.connect.side_effect = SQLAlchemyError("private-database-password")
-    monkeypatch.setattr(main, "get_engine", lambda: engine)
+    monkeypatch.setattr(db, "get_engine", lambda: engine)
     with TestClient(main.create_app()) as client:
         response = client.get("/healthz")
     assert response.status_code == 503

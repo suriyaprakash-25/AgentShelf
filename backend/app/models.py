@@ -4,8 +4,10 @@ import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy import (
+    DDL,
     BigInteger,
     CheckConstraint,
+    Computed,
     DateTime,
     ForeignKey,
     Index,
@@ -13,11 +15,18 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    event,
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+# Weighted so title matches outrank description matches; maintained by Postgres itself.
+SEARCH_VECTOR_SQL = (
+    "setweight(to_tsvector('english'::regconfig, (title)::text), 'A') || "
+    "setweight(to_tsvector('english'::regconfig, (description)::text), 'B')"
+)
 
 
 def utcnow():
@@ -71,14 +80,14 @@ class Product(Base):
     status: Mapped[str] = mapped_column(String(20), default="draft")
     images: Mapped[list] = mapped_column(JSONB, default=list)
     source_message_id: Mapped[str | None] = mapped_column(String(200), unique=True)
+    # Deferred: only ranking/filtering SQL reads it, so ORM loads never transfer it.
+    search_vector: Mapped[str | None] = mapped_column(
+        TSVECTOR, Computed(SEARCH_VECTOR_SQL, persisted=True), deferred=True
+    )
 
 
 Product.__table__.append_constraint(
-    Index(
-        "ix_products_search",
-        text("to_tsvector('english'::regconfig, (title::text || ' '::text) || description::text)"),
-        postgresql_using="gin",
-    )
+    Index("ix_products_search_vector", "search_vector", postgresql_using="gin")
 )
 
 
@@ -104,7 +113,7 @@ class Quote(Base):
         CheckConstraint("total_minor = item_total_minor + shipping_minor"),
     )
     id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
-    product_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("products.id"))
+    product_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("products.id"), index=True)
     qty: Mapped[int] = mapped_column(Integer)
     ship_to_country: Mapped[str] = mapped_column(String(2))
     title: Mapped[str] = mapped_column(String(80))
@@ -114,7 +123,8 @@ class Quote(Base):
     total_minor: Mapped[int] = mapped_column(BigInteger)
     currency: Mapped[str] = mapped_column(String(3))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    agent_session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("agent_sessions.id"))
+    # Indexed: budget checks sum a session's reserved orders through this key.
+    agent_session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("agent_sessions.id"), index=True)
 
 
 class Order(Base):
@@ -126,6 +136,14 @@ class Order(Base):
             "'failed','expired','cancelled','refunded')"
         ),
         Index("ix_orders_status_reservation", "status", "reserved_until"),
+        # Seller order pages and analytics filter by seller and sort newest first.
+        Index("ix_orders_seller_created", "seller_id", "created_at"),
+        # Operator review list: only the few orders with an open reconciliation code.
+        Index(
+            "ix_orders_reconciliation_open",
+            "updated_at",
+            postgresql_where=text("reconciliation_error IS NOT NULL"),
+        ),
     )
     id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
     quote_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("quotes.id"), unique=True)
@@ -152,7 +170,7 @@ class Order(Base):
 class OrderEvent(Base):
     __tablename__ = "order_events"
     id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
-    order_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("orders.id"))
+    order_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("orders.id"), index=True)
     type: Mapped[str] = mapped_column(String(80))
     source: Mapped[str] = mapped_column(String(30))
     payload: Mapped[dict] = mapped_column(JSONB, default=dict)
@@ -161,6 +179,8 @@ class OrderEvent(Base):
 
 class WebhookEvent(Base):
     __tablename__ = "webhook_events"
+    # Paid notifications look up the verified capture event by resource and type.
+    __table_args__ = (Index("ix_webhook_events_resource_type", "resource_id", "event_type"),)
     paypal_event_id: Mapped[str] = mapped_column(String(100), primary_key=True)
     event_type: Mapped[str] = mapped_column(String(100))
     resource_id: Mapped[str] = mapped_column(String(100))
@@ -186,6 +206,29 @@ class Job(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, server_default=func.now()
     )
+
+
+JOB_CHANNEL = "agentshelf_jobs"
+
+JOB_NOTIFY_FUNCTION_SQL = f"""
+CREATE OR REPLACE FUNCTION agentshelf_notify_job() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    PERFORM pg_notify('{JOB_CHANNEL}', NEW.kind);
+    RETURN NULL;
+END
+$$
+"""
+JOB_NOTIFY_TRIGGER_SQL = """
+CREATE TRIGGER jobs_notify
+AFTER INSERT OR UPDATE OF status, run_after ON jobs
+FOR EACH ROW WHEN (NEW.status = 'queued')
+EXECUTE FUNCTION agentshelf_notify_job()
+"""
+
+# Wake idle workers at commit (see app.job_signals); create_all matches the migration.
+event.listen(Job.__table__, "after_create", DDL(JOB_NOTIFY_FUNCTION_SQL))
+event.listen(Job.__table__, "after_create", DDL(JOB_NOTIFY_TRIGGER_SQL))
 
 
 class Conversation(Base):

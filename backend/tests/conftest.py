@@ -15,6 +15,8 @@ os.environ.setdefault(
 )
 os.environ.setdefault("APP_ENV", "test")
 os.environ.setdefault("FRONTEND_URL", "http://localhost:5173")
+# Integration tests assert read-after-write; cache behaviour has dedicated unit tests.
+os.environ.setdefault("PUBLIC_CACHE_SECONDS", "0")
 
 
 @pytest.fixture

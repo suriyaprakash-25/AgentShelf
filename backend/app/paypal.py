@@ -10,10 +10,20 @@ import httpx
 
 from app.config import get_settings
 from app.errors import DomainError
+from app.resilience import CircuitBreaker, CircuitOpenError
+
+# Bounded so a locked capture (up to three calls) stays well inside the database's
+# idle-in-transaction timeout; PayPal-Request-Id makes the single connect retry safe.
+TIMEOUT = httpx.Timeout(15.0, connect=5.0)
+CONNECT_RETRIES = 1
+TOKEN_REFRESH_MARGIN_SECONDS = 60
+SANDBOX_API = "https://api-m.sandbox.paypal.com"
+LIVE_API = "https://api-m.paypal.com"
 
 _token = None
 _token_expires = 0.0
 _token_lock = threading.Lock()
+breaker = CircuitBreaker("paypal", failure_threshold=5, reset_after_seconds=30)
 
 
 def money(minor: int):
@@ -49,11 +59,35 @@ def require_ready():
 
 def api_base():
     """Select an environment from validated configuration only."""
-    return (
-        "https://api-m.sandbox.paypal.com"
-        if get_settings().paypal_mode == "sandbox"
-        else "https://api-m.paypal.com"
-    )
+    return SANDBOX_API if get_settings().paypal_mode == "sandbox" else LIVE_API
+
+
+def send(method, url, **kwargs):
+    """One bounded provider exchange behind the circuit breaker.
+
+    Only failures to reach PayPal or 5xx responses count against the breaker; a 4xx is
+    a reachable provider rejecting the request and is raised to the caller unchanged.
+    """
+    breaker.before_call()
+    for attempt in range(CONNECT_RETRIES + 1):
+        try:
+            response = httpx.request(method, url, timeout=TIMEOUT, **kwargs)
+        except (httpx.ConnectError, httpx.ConnectTimeout):
+            # Nothing reached PayPal, so retrying cannot duplicate a side effect.
+            if attempt < CONNECT_RETRIES:
+                continue
+            breaker.record_failure()
+            raise
+        except httpx.HTTPError:
+            breaker.record_failure()
+            raise
+        if response.status_code >= 500:
+            breaker.record_failure()
+        else:
+            breaker.record_success()
+        response.raise_for_status()
+        return response
+    raise AssertionError("unreachable")  # pragma: no cover
 
 
 def get_token():
@@ -65,21 +99,21 @@ def get_token():
             return _token
         settings = get_settings()
         try:
-            response = httpx.post(
+            response = send(
+                "POST",
                 api_base() + "/v1/oauth2/token",
                 auth=(
                     settings.paypal_client_id.get_secret_value(),
                     settings.paypal_client_secret.get_secret_value(),
                 ),
                 data={"grant_type": "client_credentials"},
-                timeout=30,
             )
-            response.raise_for_status()
             data = response.json()
             _token = data["access_token"]
-            _token_expires = time.monotonic() + max(0, int(data["expires_in"]) - 60)
+            lifetime = int(data["expires_in"]) - TOKEN_REFRESH_MARGIN_SECONDS
+            _token_expires = time.monotonic() + max(0, lifetime)
             return _token
-        except (httpx.HTTPError, KeyError, ValueError) as exc:
+        except (httpx.HTTPError, CircuitOpenError, KeyError, ValueError) as exc:
             raise DomainError(
                 "PAYPAL_UNAVAILABLE", "PayPal authentication is unavailable. Try again later.", 502
             ) from exc
@@ -93,10 +127,9 @@ def request(method: str, path: str, body=None, request_id=None):
             raise ValueError("Every PayPal POST requires an idempotency key")
         headers["PayPal-Request-Id"] = request_id
     try:
-        response = httpx.request(method, api_base() + path, json=body, headers=headers, timeout=30)
-        response.raise_for_status()
+        response = send(method, api_base() + path, json=body, headers=headers)
         return response.json() if response.content else {}
-    except (httpx.HTTPError, ValueError) as exc:
+    except (httpx.HTTPError, CircuitOpenError, ValueError) as exc:
         raise DomainError(
             "PAYPAL_UNAVAILABLE", "Payment status is uncertain. Retry the same order.", 502
         ) from exc
