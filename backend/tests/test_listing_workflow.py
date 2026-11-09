@@ -11,7 +11,7 @@ from PIL import Image
 from pydantic import SecretStr
 from sqlalchemy import select
 
-from app import email, jobs, llm, storage
+from app import ai_providers, email, jobs, llm, storage
 from app.config import get_settings
 from app.db import session_factory
 from app.listing import validate_draft
@@ -243,7 +243,7 @@ def test_actual_sdk_transport_failure_uses_durable_retry_then_drafts(
         )
 
     monkeypatch.setattr(
-        llm.anthropic,
+        ai_providers.anthropic,
         "Anthropic",
         lambda **kwargs: actual_client(
             **kwargs, http_client=httpx.Client(transport=httpx.MockTransport(respond))

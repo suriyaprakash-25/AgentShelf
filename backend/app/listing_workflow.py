@@ -6,15 +6,16 @@ import uuid
 from datetime import timedelta
 
 from sqlalchemy import func, select
-from sqlalchemy.dialects.postgresql import insert
 
-from app import llm, rate_limits, storage
+from app import cache, llm, rate_limits, seller_catalog, storage
 from app.config import get_settings
 from app.db import session_factory
 from app.errors import DomainError
 from app.guards import safe_text
 from app.listing import preprocess_image, validate_draft
-from app.models import Job, ListingRequest, MediaAsset, Product, RateBucket, Seller, utcnow
+from app.models import Job, ListingRequest, MediaAsset, Product, Seller, utcnow
+
+DRAFTS_PER_HOUR = 30  # Roadmap AI design: 30 listing drafts per hour per seller.
 
 
 def caption_text(value):
@@ -54,7 +55,7 @@ def chat_text(value):
 def upload(seller_id, raw, asset_id=None):
     clean = preprocess_image(raw)
     asset_id = asset_id or uuid.uuid4()
-    rate_limits.consume_ip(str(seller_id), "uploads", 120, 3600)
+    rate_limits.enforce(rate_limits.MEDIA_UPLOADS, seller_id)
     key = f"{get_settings().paypal_mode}/{seller_id}/{asset_id}.jpg"
     with session_factory() as db, db.begin():
         # Serialize stable-ID retries with cleanup, including objects with no DB row yet.
@@ -92,18 +93,14 @@ def create(seller_id, media_ids, caption, request_id=None, phone=None):
         existing = db.get(ListingRequest, request_id) if request_id else None
         if existing and existing.seller_id == seller_id:
             return {"id": str(existing.id), "status": existing.status}
-        key = f"listings:{seller_id}"
-        now = utcnow()
-        db.execute(
-            insert(RateBucket)
-            .values(key=key, used=0, expires_at=now + timedelta(hours=1))
-            .on_conflict_do_nothing()
+        # A later validation failure rolls this count back with the transaction.
+        rate_limits.consume(
+            db,
+            f"listings:{seller_id}",
+            DRAFTS_PER_HOUR,
+            3600,
+            "You can request 30 listing drafts per hour.",
         )
-        bucket = db.scalar(select(RateBucket).where(RateBucket.key == key).with_for_update())
-        if bucket.expires_at <= now:
-            bucket.used, bucket.expires_at = 0, now + timedelta(hours=1)
-        if bucket.used >= 30:
-            raise DomainError("RATE_LIMITED", "You can request 30 listing drafts per hour.", 429)
         assets = list(
             db.scalars(
                 select(MediaAsset)
@@ -119,7 +116,6 @@ def create(seller_id, media_ids, caption, request_id=None, phone=None):
             raise DomainError(
                 "MEDIA_NOT_FOUND", "Select unlisted images from your own account.", 404
             )
-        bucket.used += 1
         request = ListingRequest(
             **({"id": request_id} if request_id else {}),
             seller_id=seller_id,
@@ -189,6 +185,13 @@ def process(db, job):
 
 
 def publish(seller_id, listing_id, title, description, price_minor, stock):
+    """Publish a validated draft at the seller's confirmed price, then refresh public reads."""
+    result = _publish(seller_id, listing_id, title, description, price_minor, stock)
+    cache.invalidate_catalog()
+    return result
+
+
+def _publish(seller_id, listing_id, title, description, price_minor, stock):
     if (
         type(price_minor) is not int
         or not 1 <= price_minor <= 100_000_000
@@ -232,17 +235,9 @@ def publish(seller_id, listing_id, title, description, price_minor, stock):
             raise DomainError(
                 "MEDIA_IN_USE", "One of these photos is already attached to a listing.", 409
             )
-        number = (
-            db.scalar(
-                select(func.coalesce(func.max(Product.short_no), 0)).where(
-                    Product.seller_id == seller_id
-                )
-            )
-            + 1
-        )
         product = Product(
             seller_id=seller_id,
-            short_no=number,
+            short_no=seller_catalog.next_short_no(db, seller_id),
             title=safe_text(title, 80),
             description=safe_text(description, 600),
             price_minor=price_minor,

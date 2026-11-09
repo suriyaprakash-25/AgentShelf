@@ -9,7 +9,7 @@ import httpx
 import pytest
 from pydantic import SecretStr
 
-from app import llm
+from app import ai_providers, llm
 from app.errors import DomainError
 
 DRAFT = {
@@ -62,8 +62,8 @@ def sdk(monkeypatch):
                 **kwargs, http_client=httpx.AsyncClient(transport=httpx.MockTransport(handler))
             )
 
-        monkeypatch.setattr(llm.anthropic, "Anthropic", sync)
-        monkeypatch.setattr(llm.anthropic, "AsyncAnthropic", asynchronous)
+        monkeypatch.setattr(ai_providers.anthropic, "Anthropic", sync)
+        monkeypatch.setattr(ai_providers.anthropic, "AsyncAnthropic", asynchronous)
 
     return connect
 

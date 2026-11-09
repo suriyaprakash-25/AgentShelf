@@ -1,19 +1,24 @@
-"""Authenticated web onboarding and seller-owned catalog/order resources."""
+"""Authenticated web onboarding and seller-owned catalog/order resources.
+
+Handlers authenticate, validate request shapes and delegate to ``auth``,
+``seller_catalog``, ``tracking`` and ``copilot``; no business rules live here.
+"""
 
 import uuid
 
 from fastapi import APIRouter, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import func, select
 
-from app import auth, copilot, paypal, rate_limits, tracking
+from app import auth, copilot, rate_limits, seller_catalog, tracking
 from app.config import get_settings
 from app.db import session_factory
 from app.errors import DomainError
 from app.guards import safe_text
-from app.models import MediaAsset, Order, Product, Quote, Seller, SellerSession
+from app.models import SellerSession
 
 router = APIRouter()
+PAGE = Query(1, ge=1)
+PAGE_SIZE = Query(seller_catalog.DEFAULT_PAGE_SIZE, ge=1, le=seller_catalog.MAX_PAGE_SIZE)
 
 
 class TrackingInput(BaseModel):
@@ -32,21 +37,7 @@ def add_tracking(order_id: uuid.UUID, body: TrackingInput, request: Request):
 def order_detail(order_id: uuid.UUID, request: Request, response: Response):
     seller_id, _ = auth.seller_access(request)
     response.headers["Cache-Control"] = "no-store"
-    with session_factory() as db:
-        order = db.scalar(select(Order).where(Order.id == order_id, Order.seller_id == seller_id))
-        if not order:
-            raise DomainError("ORDER_NOT_FOUND", "This order is unavailable.", 404)
-        quote = db.get(Quote, order.quote_id)
-        return {
-            "id": str(order.id),
-            "title": quote.title,
-            "qty": quote.qty,
-            "status": order.status,
-            "ship_to": order.ship_to,
-            "carrier": order.carrier,
-            "tracking_number": order.tracking_number,
-            "payment_review": order.reconciliation_error,
-        }
+    return seller_catalog.order_detail(seller_id, order_id)
 
 
 EMAIL_PATTERN = r"^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$"
@@ -67,23 +58,15 @@ class OnboardingInput(LinkInput):
     consent: bool
 
 
-def require_origin(request):
-    allowed_origins = {get_settings().frontend_url}
-    if get_settings().app_env in {"local", "test"}:
-        allowed_origins.update({"http://localhost:5173", "http://127.0.0.1:5173"})
-    if request.headers.get("origin") not in allowed_origins:
-        raise DomainError("CSRF_REJECTED", "Open AgentShelf to request sign-in.", 403)
-
-
 @router.post("/api/auth/request-link", status_code=202)
 def request_link(body: LinkInput, request: Request):
-    require_origin(request)
+    auth.require_origin(request)
     return auth.request_link(body.email, None, rate_limits.client_ip(request))
 
 
 @router.post("/api/onboarding", status_code=202)
 def onboard(body: OnboardingInput, request: Request):
-    require_origin(request)
+    auth.require_origin(request)
     if not body.consent:
         raise DomainError("CONSENT_REQUIRED", "Accept the seller terms before creating a store.")
     profile = {
@@ -100,12 +83,12 @@ class RedeemInput(Input):
 
 @router.post("/api/auth/redeem")
 def redeem(body: RedeemInput, request: Request, response: Response):
-    require_origin(request)
+    auth.require_origin(request)
     token = auth.redeem(body.token)
     response.set_cookie(
         auth.COOKIE,
         token,
-        max_age=7 * 24 * 3600,
+        max_age=int(auth.SESSION_TTL.total_seconds()),
         httponly=True,
         secure=get_settings().app_env != "local",
         samesite="lax",
@@ -119,17 +102,7 @@ def redeem(body: RedeemInput, request: Request, response: Response):
 def me(request: Request, response: Response):
     seller_id, csrf = auth.seller_access(request)
     response.headers["Cache-Control"] = "no-store"
-    with session_factory() as db:
-        seller = db.get(Seller, seller_id)
-        return {
-            "id": str(seller.id),
-            "name": seller.name,
-            "country": seller.country,
-            "store_slug": seller.store_slug,
-            "csrf_token": csrf,
-            "live_eligible": seller.live_eligible,
-            "is_operator": seller.is_operator,
-        }
+    return seller_catalog.seller_profile(seller_id, csrf)
 
 
 @router.post("/api/auth/logout")
@@ -149,40 +122,11 @@ def logout(request: Request, response: Response):
     return {"message": "Signed out."}
 
 
-def product_json(product):
-    return {
-        "id": str(product.id),
-        "short_no": product.short_no,
-        "title": product.title,
-        "description": product.description,
-        "price_minor": product.price_minor,
-        "currency": product.currency,
-        "stock": product.stock,
-        "status": product.status,
-        "images": product.images,
-    }
-
-
 @router.get("/api/me/products")
-def products(
-    request: Request,
-    response: Response,
-    page: int = Query(1, ge=1),
-    page_size: int = Query(25, ge=1, le=100),
-):
+def products(request: Request, response: Response, page: int = PAGE, page_size: int = PAGE_SIZE):
     seller_id, _ = auth.seller_access(request)
     response.headers["Cache-Control"] = "no-store"
-    with session_factory() as db:
-        condition = Product.seller_id == seller_id
-        count = db.scalar(select(func.count()).select_from(Product).where(condition))
-        rows = db.scalars(
-            select(Product)
-            .where(condition)
-            .order_by(Product.short_no.desc())
-            .offset((page - 1) * page_size)
-            .limit(page_size)
-        )
-        return {"items": [product_json(p) for p in rows], "total": count, "page": page}
+    return seller_catalog.list_products(seller_id, page, page_size)
 
 
 class ProductInput(Input):
@@ -196,46 +140,9 @@ class ProductInput(Input):
 @router.post("/api/me/products", status_code=201)
 def create_product(body: ProductInput, request: Request):
     seller_id, _ = auth.seller_access(request, write=True)
-    with session_factory() as db, db.begin():
-        db.scalar(select(Seller).where(Seller.id == seller_id).with_for_update())
-        asset = None
-        if body.media_id:
-            asset = db.scalar(
-                select(MediaAsset)
-                .where(
-                    MediaAsset.id == body.media_id,
-                    MediaAsset.seller_id == seller_id,
-                    MediaAsset.product_id.is_(None),
-                )
-                .with_for_update()
-            )
-            if not asset:
-                raise DomainError(
-                    "MEDIA_NOT_FOUND", "Select an unlisted photo from your account.", 404
-                )
-        number = (
-            db.scalar(
-                select(func.coalesce(func.max(Product.short_no), 0)).where(
-                    Product.seller_id == seller_id
-                )
-            )
-            + 1
-        )
-        product = Product(
-            seller_id=seller_id,
-            short_no=number,
-            title=safe_text(body.title),
-            description=safe_text(body.description),
-            price_minor=body.price_minor,
-            stock=body.stock,
-            status="draft",
-            images=[get_settings().public_api_url + f"/api/media/{asset.id}"] if asset else [],
-        )
-        db.add(product)
-        db.flush()
-        if asset:
-            asset.product_id = product.id
-        return product_json(product)
+    return seller_catalog.create_product(
+        seller_id, body.title, body.description, body.price_minor, body.stock, body.media_id
+    )
 
 
 class ProductPatch(Input):
@@ -244,45 +151,10 @@ class ProductPatch(Input):
     media_id: uuid.UUID | None = None
 
 
-def owned_product(db, product_id, seller_id):
-    product = db.scalar(
-        select(Product)
-        .where(Product.id == product_id, Product.seller_id == seller_id)
-        .with_for_update()
-    )
-    if not product:
-        raise DomainError("PRODUCT_NOT_FOUND", "This product is unavailable.", 404)
-    return product
-
-
 @router.patch("/api/me/products/{product_id}")
 def update_product(product_id: uuid.UUID, body: ProductPatch, request: Request):
     seller_id, _ = auth.seller_access(request, write=True)
-    updates = body.model_dump(exclude_unset=True)
-    if not updates or any(value is None for value in updates.values()):
-        raise DomainError("INVALID_INPUT", "Set a valid price, stock quantity, or photo.")
-    with session_factory() as db, db.begin():
-        product = owned_product(db, product_id, seller_id)
-        media_id = updates.pop("media_id", None)
-        if media_id:
-            asset = db.scalar(
-                select(MediaAsset)
-                .where(
-                    MediaAsset.id == media_id,
-                    MediaAsset.seller_id == seller_id,
-                    MediaAsset.product_id.is_(None),
-                )
-                .with_for_update()
-            )
-            if not asset:
-                raise DomainError(
-                    "MEDIA_NOT_FOUND", "Select an unlisted photo from your account.", 404
-                )
-            asset.product_id = product.id
-            product.images = [get_settings().public_api_url + f"/api/media/{asset.id}"]
-        for key, value in updates.items():
-            setattr(product, key, value)
-        return product_json(product)
+    return seller_catalog.update_product(seller_id, product_id, body.model_dump(exclude_unset=True))
 
 
 class ConfirmInput(Input):
@@ -292,38 +164,20 @@ class ConfirmInput(Input):
 @router.post("/api/me/products/{product_id}/publish")
 def publish(product_id: uuid.UUID, body: ConfirmInput, request: Request):
     seller_id, _ = auth.seller_access(request, write=True)
-    if not body.confirm:
-        raise DomainError("CONFIRMATION_REQUIRED", "Confirm the listing details and price first.")
-    with session_factory() as db, db.begin():
-        product = owned_product(db, product_id, seller_id)
-        if product.status == "archived":
-            raise DomainError(
-                "PRODUCT_ARCHIVED", "Create a new draft for an archived listing.", 409
-            )
-        product.status = "live"
-        return product_json(product)
+    return seller_catalog.publish_product(seller_id, product_id, body.confirm)
 
 
 @router.post("/api/me/products/{product_id}/archive")
 def archive(product_id: uuid.UUID, request: Request):
     seller_id, _ = auth.seller_access(request, write=True)
-    with session_factory() as db, db.begin():
-        product = owned_product(db, product_id, seller_id)
-        product.status = "archived"
-        return product_json(product)
+    return seller_catalog.archive_product(seller_id, product_id)
 
 
 @router.post("/api/me/products/{product_id}/paypal-catalog")
 def mirror_paypal_catalog(product_id: uuid.UUID, request: Request):
     """Mirror a published seller product to the PayPal Catalog Products API (S-2)."""
     seller_id, _ = auth.seller_access(request, write=True)
-    with session_factory() as db:
-        product = db.scalar(
-            select(Product).where(Product.id == product_id, Product.seller_id == seller_id)
-        )
-        if not product or product.status != "live":
-            raise DomainError("PRODUCT_NOT_FOUND", "Publish this product before mirroring.", 404)
-    return paypal.sync_catalog_product(product)
+    return seller_catalog.mirror_to_paypal(seller_id, product_id)
 
 
 class RefundInput(Input):
@@ -363,37 +217,7 @@ def copilot_invoice(body: InvoiceInput, request: Request):
 
 
 @router.get("/api/me/orders")
-def orders(
-    request: Request,
-    response: Response,
-    page: int = Query(1, ge=1),
-    page_size: int = Query(25, ge=1, le=100),
-):
+def orders(request: Request, response: Response, page: int = PAGE, page_size: int = PAGE_SIZE):
     seller_id, _ = auth.seller_access(request)
     response.headers["Cache-Control"] = "no-store"
-    with session_factory() as db:
-        condition = Order.seller_id == seller_id
-        count = db.scalar(select(func.count()).select_from(Order).where(condition))
-        rows = db.scalars(
-            select(Order)
-            .where(condition)
-            .order_by(Order.created_at.desc())
-            .offset((page - 1) * page_size)
-            .limit(page_size)
-        )
-        return {
-            "items": [
-                {
-                    "id": str(o.id),
-                    "status": o.status,
-                    "amount_minor": o.amount_minor,
-                    "currency": o.currency,
-                    "created_at": o.created_at.isoformat(),
-                    "carrier": o.carrier,
-                    "tracking_number": o.tracking_number,
-                }
-                for o in rows
-            ],
-            "total": count,
-            "page": page,
-        }
+    return seller_catalog.list_orders(seller_id, page, page_size)
