@@ -18,6 +18,48 @@ import httpx
 REQUEST_TIMEOUT_SECONDS = 30
 GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
+# Gemini 3 spends output tokens on reasoning before answering. With the answer budgets
+# sized for visible text (400-1,200 tokens), "low" reasoning alone consumed 1,150 of a
+# 1,200-token listing call and truncated the JSON. Each level gets its own allowance on
+# top of the caller's answer budget; only tokens actually generated are billed.
+GEMINI_THINKING_ALLOWANCE = {"minimal": 256, "low": 2048, "medium": 4096, "high": 8192}
+
+
+def gemini_generation_config(max_tokens: int, thinking_level: str | None) -> dict:
+    """Answer budget plus the reasoning allowance for the configured level."""
+    if not thinking_level:
+        return {"maxOutputTokens": max_tokens}
+    return {
+        "maxOutputTokens": max_tokens + GEMINI_THINKING_ALLOWANCE[thinking_level],
+        "thinkingConfig": {"thinkingLevel": thinking_level},
+    }
+
+
+# Provider-private data a neutral block must carry between turns. It is stored with the
+# chat history and stripped before any other provider sees the block.
+PROVIDER_META = "provider_meta"
+GEMINI_SIGNATURE = "gemini_thought_signature"
+# Gemini 3 rejects a current-turn functionCall without its thoughtSignature. History that
+# no Gemini model produced (another provider, or sessions stored before signatures were
+# kept) uses the documented placeholder, which Gemini accepts in place of a signature.
+GEMINI_UNSIGNED_PLACEHOLDER = "skip_thought_signature_validator"
+
+
+def without_provider_meta(messages: list) -> list:
+    """Copy of neutral messages with provider-private block metadata removed."""
+    cleaned = []
+    for msg in messages:
+        content = msg.get("content")
+        if isinstance(content, list):
+            content = [
+                {k: v for k, v in block.items() if k != PROVIDER_META}
+                if isinstance(block, dict)
+                else block
+                for block in content
+            ]
+        cleaned.append({**msg, "content": content})
+    return cleaned
+
 
 @dataclass(frozen=True)
 class TextPart:
@@ -132,7 +174,7 @@ class AnthropicProvider:
                     model=self._model,
                     max_tokens=max_tokens,
                     system=system,
-                    messages=messages,
+                    messages=without_provider_meta(messages),
                     tools=tools,
                 )
             return [block.model_dump(exclude_none=True) for block in response.content]
@@ -173,15 +215,24 @@ def gemini_contents(messages) -> list[dict]:
             contents.append({"role": role, "parts": [{"text": raw_content}]})
             continue
         parts = []
+        first_call = True
         for block in raw_content or []:
             btype = block.get("type")
+            signature = (block.get(PROVIDER_META) or {}).get(GEMINI_SIGNATURE)
             if btype == "text" and block.get("text"):
-                parts.append({"text": block["text"]})
+                part = {"text": block["text"]}
+                if signature:
+                    part["thoughtSignature"] = signature
+                parts.append(part)
             elif btype == "tool_use":
                 tool_names[block["id"]] = block["name"]
-                parts.append(
-                    {"functionCall": {"name": block["name"], "args": block.get("input") or {}}}
-                )
+                part = {"functionCall": {"name": block["name"], "args": block.get("input") or {}}}
+                if signature:
+                    part["thoughtSignature"] = signature
+                elif first_call and role == "model":
+                    part["thoughtSignature"] = GEMINI_UNSIGNED_PLACEHOLDER
+                first_call = False
+                parts.append(part)
             elif btype == "tool_result":
                 name = tool_names.get(block.get("tool_use_id", ""), "mcp_tool")
                 try:
@@ -195,7 +246,9 @@ def gemini_contents(messages) -> list[dict]:
     return contents
 
 
-def gemini_tool_payload(messages, tools, system_text: str, max_tokens: int = 1000) -> dict:
+def gemini_tool_payload(
+    messages, tools, system_text: str, max_tokens: int = 1000, thinking_level: str | None = None
+) -> dict:
     declarations = [
         {
             "name": t["name"],
@@ -207,7 +260,7 @@ def gemini_tool_payload(messages, tools, system_text: str, max_tokens: int = 100
     body = {
         "systemInstruction": {"parts": [{"text": system_text}]},
         "contents": gemini_contents(messages),
-        "generationConfig": {"maxOutputTokens": max_tokens},
+        "generationConfig": gemini_generation_config(max_tokens, thinking_level),
     }
     if declarations:
         body["tools"] = [{"functionDeclarations": declarations}]
@@ -220,18 +273,23 @@ def gemini_blocks(payload: dict) -> list[dict]:
     parts = ((candidates[0].get("content") or {}).get("parts") or []) if candidates else []
     blocks = []
     for idx, part in enumerate(parts):
+        if part.get("thought"):
+            continue  # thought summaries are never shown or replayed
         if part.get("text"):
-            blocks.append({"type": "text", "text": part["text"]})
+            block = {"type": "text", "text": part["text"]}
         elif "functionCall" in part:
             call = part["functionCall"]
-            blocks.append(
-                {
-                    "type": "tool_use",
-                    "id": f"gemini_call_{idx}_{call.get('name', 'tool')}",
-                    "name": call.get("name", ""),
-                    "input": dict(call.get("args") or {}),
-                }
-            )
+            block = {
+                "type": "tool_use",
+                "id": f"gemini_call_{idx}_{call.get('name', 'tool')}",
+                "name": call.get("name", ""),
+                "input": dict(call.get("args") or {}),
+            }
+        else:
+            continue
+        if part.get("thoughtSignature"):
+            block[PROVIDER_META] = {GEMINI_SIGNATURE: part["thoughtSignature"]}
+        blocks.append(block)
     return blocks
 
 
@@ -241,6 +299,7 @@ class GeminiProvider:
     def __init__(self, settings):
         self._key = settings.gemini_api_key.get_secret_value()
         self._url = GEMINI_ENDPOINT.format(model=settings.gemini_model)
+        self._thinking = getattr(settings, "gemini_thinking_level", None)
 
     def _headers(self):
         return {"Content-Type": "application/json", "X-goog-api-key": self._key}
@@ -255,9 +314,8 @@ class GeminiProvider:
                 out.append({"text": part.text})
         return out
 
-    @staticmethod
-    def _body(system, parts, max_tokens, json_output=False):
-        config = {"maxOutputTokens": max_tokens}
+    def _body(self, system, parts, max_tokens, json_output=False):
+        config = gemini_generation_config(max_tokens, self._thinking)
         if json_output:
             config = {"responseMimeType": "application/json", **config}
         return {
@@ -289,7 +347,9 @@ class GeminiProvider:
         return gemini_text(await self._apost(self._body(system, [{"text": text}], max_tokens)))
 
     async def tool_turn(self, system, messages, tools, max_tokens):
-        payload = await self._apost(gemini_tool_payload(messages, tools, system, max_tokens))
+        payload = await self._apost(
+            gemini_tool_payload(messages, tools, system, max_tokens, self._thinking)
+        )
         try:
             return gemini_blocks(payload)
         except (KeyError, TypeError, AttributeError) as exc:

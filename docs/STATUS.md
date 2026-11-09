@@ -446,3 +446,49 @@ backend/tests/test_buyer_agent.py, frontend/vite.config.ts.
   - Cloudflare R2 (`agentshelf-media`) live `put_object` / `get_object` / `delete_object` roundtrip.
   - Meta WhatsApp Cloud API (`GET /v21.0/1359067790627303` returning `200 OK` for `+1 711-932-5870 AgentShelf`).
 - Hosted staging deployment, webhook registration (`PAYPAL_WEBHOOK_ID` and WhatsApp webhook callback), end-to-end buyer-approved capture verification, 20-item human quality evaluation, and Gates 1, 2, and 3 remain unaccepted (`gate_approval: False`).
+
+## Real-credential local run — 2026-11-09
+
+Local stack (Postgres 17, API, worker, Vite) with the owner's `.env`; `MEDIA_BACKEND=r2`
+for the run. Values were never printed; evidence below is sanitized. Nothing here is a
+hosted or gate acceptance (`gate_approval: false`).
+
+| Provider | Result |
+| --- | --- |
+| PayPal sandbox | OAuth OK; scopes include checkout, webhooks, refunds and disputes. Order create/read OK. No webhook registered (`PAYPAL_WEBHOOK_ID` unset; needs a public HTTPS URL). |
+| Gemini (`gemini-3.5-flash`) | Key and model valid; translation OK in 3.0 s. **Free tier: 20 requests/day/model**, exhausted during this run (429 `GenerateRequestsPerDayPerProjectPerModel-FreeTier`). |
+| Cloudflare R2 | App `R2MediaStore` put/read/delete OK; seller photo upload stored in the bucket through `/api/me/media` (1.9 s); anonymous S3 access refused. |
+| WhatsApp Cloud API | Access token **expired** (Graph error 190/463); no checks possible. Needs a system-user token. |
+| Resend | Key valid and send-only (401 `restricted_api_key` on domain listing). Sender is `resend.dev`, which only delivers to the Resend account owner; seller sign-in needs a verified domain. No email was sent. |
+| Sentry | Not configured. |
+| `SERVICE_SIGNING_KEY` | Set but 14 characters; replace with ≥32 random bytes. |
+
+**Buyer path (real Gemini → real MCP → real PayPal sandbox):** after the fix below, one
+Playground conversation made 4 `search_products` calls and `get_quote` (Painted keepsake
+box, 40.00 USD) in 12.7 s; human confirmation ran `create_checkout` in 3.1 s. The local
+order (4000 minor, USD) matched the PayPal order (`PAYER_ACTION_REQUIRED`, 40.00 USD,
+payee equal to the seller's sandbox business account). Approval, capture and webhooks
+need a sandbox buyer login and a public URL; not yet done.
+
+**Defects found only with the real provider (both fixed, tests added):**
+
+1. *Gemini 3 tool calls.* The second model round of every buyer chat returned HTTP 400
+   ("Function call is missing a thought_signature"), so no purchase conversation could
+   complete. `ai_providers` now keeps each part's `thoughtSignature` in the neutral block
+   (`provider_meta`), replays it to Gemini, uses Gemini's documented placeholder for
+   unsigned history, and strips the metadata before Anthropic sees it. Verified live:
+   unsigned 400, signed 200; full chat succeeds.
+2. *Reasoning starved the answer budget.* A listing draft spent 1,150 of 1,200 output
+   tokens on reasoning (`finishReason: MAX_TOKENS`), truncating the JSON; the seller saw
+   "Draft could not be generated". Gemini requests now set `GEMINI_THINKING_LEVEL`
+   (default `low`) and add a per-level reasoning allowance on top of each answer budget.
+   Verified live at `minimal`: valid JSON in 3.2 s, 0 reasoning tokens. The full seller
+   draft re-run at `low` is pending the Gemini quota reset or billing.
+
+Remaining minor gap: a model-rejected draft (`AI_INVALID_DRAFT`, `UNSAFE_CONTENT`,
+`PERSONAL_CAPTION`) is marked failed while its job ends `done` with no error code, so
+operators cannot see the reason.
+
+Local data changes: the fictional seed seller `meera-jaipur` now pays out to the app's
+sandbox business account (per this runbook); the stale `agentshelf_test` database was
+recreated. Backend suite: 340 passed, 1 skipped.

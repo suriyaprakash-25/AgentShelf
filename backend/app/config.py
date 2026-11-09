@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     anthropic_model: str = "claude-sonnet-4-5"
     gemini_api_key: SecretStr | None = None
     gemini_model: str = "gemini-flash-latest"
+    # Gemini 3 reasoning depth. Reasoning tokens count against the output limit, so the
+    # provider adds a matching allowance on top of each call's answer budget.
+    gemini_thinking_level: Literal["minimal", "low", "medium", "high"] = "low"
     whatsapp_app_secret: SecretStr | None = None
     whatsapp_verify_token: SecretStr | None = None
     whatsapp_access_token: SecretStr | None = None
