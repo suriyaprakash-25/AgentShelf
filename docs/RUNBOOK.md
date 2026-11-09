@@ -395,3 +395,53 @@ loopback host. `python scripts/tests/test_uptime.py` runs controlled transport t
 CI executes them separately from the database/backend suite. The probe does not
 establish worker health or real PayPal/Meta/AI delivery; use the operations screen
 and provider acceptance checks for those requirements.
+
+## Scale verification (load balancer, replicas, read replica)
+
+Local only; uses no provider secrets and never touches sandbox or live payments.
+
+```sh
+docker compose -f deploy/scale/docker-compose.yml up --build -d
+curl -s http://127.0.0.1:8088/healthz          # expects "read_replica": "reachable"
+docker compose -f deploy/scale/docker-compose.yml exec db \
+  psql -U agentshelf -tAc "select state from pg_stat_replication"   # streaming
+docker compose -f deploy/scale/docker-compose.yml logs lb | grep -o 'upstream=[0-9.:]*' | sort | uniq -c
+docker compose -f deploy/scale/docker-compose.yml down -v
+```
+
+The November 9, 2026 evidence:
+
+* Requests split 305/305 across the two replicas.
+* Four MCP sessions succeeded across replicas.
+* The replica held all `agentshelf-read` connections and rejected writes.
+* Replay lag was about 2 ms.
+* Both workers were listening on `agentshelf_jobs`.
+* Stopping one replica during 2,000 requests produced 0 errors.
+
+The ADRs record the decisions:
+
+* ADR-002: capacity and scaling;
+* ADR-003: caching and replicas;
+* ADR-004: edge identity and quotas;
+* ADR-005: failure handling and messaging.
+
+### Settings introduced by this hardening
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `TRUSTED_PROXY_HOPS` | 1 deployed / 0 local | Which `X-Forwarded-For` hop is the client |
+| `FORWARDED_ALLOW_IPS` | `127.0.0.1` | Addresses uvicorn lets rewrite client and scheme |
+| `WEB_CONCURRENCY` | 2 | Uvicorn workers per container |
+| `SERVICE_SIGNING_KEY` | Derived from `DATABASE_URL` | Signs Playground MCP calls across replicas |
+| `DATABASE_READ_URL` | Unset (primary) | Streaming replica for anonymous catalog reads |
+| `DB_STATEMENT_TIMEOUT_MS` / `DB_NETWORK_TIMEOUT_MS` | 15000 / 10000 | Server query bound and `tcp_user_timeout` |
+| `REQUEST_DEADLINE_SECONDS` / `PROVIDER_REQUEST_DEADLINE_SECONDS` | 15 / 75 | Client-side 503 when a dependency hangs |
+| `PUBLIC_CACHE_SECONDS` | 10 | Anonymous catalog cache TTL (0 disables) |
+
+Rollout notes:
+
+* Run `alembic upgrade head` before starting the new web image. Revision `c3a91d2e7f10`
+  rewrites `products` to add the stored search vector, which is brief at pilot size.
+  Revision `d7b2e4f19a03` installs the job NOTIFY trigger.
+* If a platform proxy chain has more than one hop, set `TRUSTED_PROXY_HOPS` to match it
+  and verify on staging that spoofed `X-Forwarded-For` prefixes share one quota.

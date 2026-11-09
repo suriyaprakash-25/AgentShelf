@@ -27,12 +27,12 @@ Seller (WhatsApp / Web Studio)
 FastAPI + PostgreSQL 17/18 + Durable Worker Queue
   ├── Listing Workflow (EXIF strip → private R2 → Vision draft → Seller price/stock confirm)
   ├── Public Storefront (/s/{slug}, schema.org JSON-LD, multi-language copy translation)
-  ├── MCP Server (/mcp, /.well-known/mcp.json: search_catalog, get_product, get_quote, create_checkout, get_order_status)
+  ├── MCP Server (/mcp, stateless Streamable HTTP; /.well-known/mcp.json: search_products, get_quote, create_checkout, get_order_status)
   └── PayPal Boundary (Orders v2 create/capture, 5-header Webhook verify, Trackers Batch, Refunds, Invoices, Catalog sync)
 ```
 
 1. Seller supplies photos (and optional voice note); AI drafts a listing; seller confirms details, price, and stock.
-2. An MCP client searches live PostgreSQL products via `/mcp`.
+2. An MCP client searches live PostgreSQL products via `/mcp` (relevance-ranked full-text search).
 3. The server snapshots a 15-minute quote with item and shipping totals in integer minor units.
 4. Checkout reserves stock (`SELECT ... FOR UPDATE`), checks cumulative session budget, and creates one PayPal order for that quote.
 5. The human buyer approves on PayPal; the server verifies and captures.

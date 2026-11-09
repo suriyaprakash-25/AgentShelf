@@ -38,6 +38,21 @@ Source roadmap acceptance and independent release gates remain separate.
 - [x] October 11 full local suite: 190 backend tests, 13 development and 12 packaged browser tests, PostgreSQL 17 restore and no migration drift.
 - [x] Smaller optional monitoring SDK and packaged dist workflows, including missing-licence gate.
 - [x] Operator confirmation/error/retry/denial/mobile browser checks and retention/R2 regression cases.
+- [x] November 9 evaluation hardening, locally verified (ADR-002 to ADR-006):
+  - Rightmost trusted-hop client identity; spoofed X-Forwarded-For prefixes share one quota.
+  - Signed per-session quota for Playground MCP calls.
+  - Atomic single-statement quotas.
+  - Database timeouts, keepalives and `tcp_user_timeout`.
+  - Request deadlines and a 3-second health probe.
+  - PayPal circuit breaker.
+- [x] Ranked weighted full-text search with a relevance-aware keyset cursor; hot-path indexes; migrations up/down/up with no drift.
+- [x] Read-through cache with single flight; optional read replica; stateless MCP.
+- [x] LISTEN/NOTIFY worker wake-ups.
+- [x] Local nginx stack: 2 web replicas, 2 workers and a streaming replica. Requests split evenly, MCP worked across replicas, and failover lost zero requests.
+- [x] Seller service layer; provider and storage strategies; job registry; split frontend pages.
+- [x] Measured landing stats replace invented figures; mobile overflow, ARIA, contrast and receipt-heading fixes.
+- [x] 332 backend tests and 16 browser tests pass.
+- [ ] Verify trusted-proxy hops, HSTS, replica routing, deadlines and the breaker on funded HTTPS staging with real providers.
 - [x] Recovered local Docker: fresh image, non-root API, worker heartbeat, gzip/cache/auth smoke checks.
 - [x] Local mobile storefront: performance 91, accessibility 100, LCP 2.0 seconds.
 - [x] Phase A codebase review remediations (proxy IP isolation, PayPal hostname validation, decoupled chat PII filter, 15-minute unapproved checkout reservation expiry, formatted WhatsApp address notifications, receipt tracking display, Playground MCP trace wiring, `useParams()` storefront routing, split dashboard pagination, `make demo-reset`).

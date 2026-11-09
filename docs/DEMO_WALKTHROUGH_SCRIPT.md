@@ -42,7 +42,7 @@
 - **Action**:
   1. Show the shopping session settings (Budget: `$60.00 USD`, Ship to: `United Kingdom`).
   2. Click on the prompt suggestion pill or select a product: **"Terracotta Filter Coffee Cup Set" ($24.00)**.
-  3. Expand the **"MCP Tool Activity"** trace accordion to show the `search_catalog` and `get_quote` events.
+  3. Expand the **"MCP Tool Activity"** trace accordion to show the `search_products` and `get_quote` events.
 - **Voiceover**:
   > *"Now let's switch to the buyer. Autonomous AI shopping agents don't browse HTML like humans — they query AgentShelf using the official Model Context Protocol at `/.well-known/mcp.json`.*  
   > *In our Buyer Playground, a shopper specifies their budget and destination. When the agent finds a match, AgentShelf generates an **immutable, cryptographically bound quote**.*  

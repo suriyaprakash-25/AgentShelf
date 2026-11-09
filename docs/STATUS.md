@@ -8,6 +8,30 @@ The unchanged source PDF has SHA-256
 12 Must requirements, 14 stories and three gates. Its counts are historical;
 they must not be read as a current implementation assessment.
 
+## November 9, 2026 evaluation hardening (branch `refactor/evaluation-hardening`)
+
+Everything below was verified locally on a throwaway PostgreSQL 17 database with every
+provider credential blank. No external service was called. Provider, staging,
+deployment and merchant-eligibility gates **remain unaccepted**.
+
+| Check | Result |
+| --- | --- |
+| Backend suite | 332 passed, 1 skipped (previously 292 passed, 1 failed) |
+| Browser suite (Playwright + axe) | 16/16 passed (previously 13/16), including the mobile axe scan of every public screen |
+| Alembic | Upgrade, downgrade and upgrade pass; `alembic check` reports no drift (two new revisions) |
+| Hung database (`docker pause`) | 503 in 3–15 s, recovers on the first check, no late writes (previously hung for more than 40 s) |
+| Partitioned database (iptables DROP) | 503 in 3–15 s, recovers on the first check |
+| Concurrency, 1 worker, local | `/api/products` at concurrency 100: 151 req/s, p95 2.8 s (previously 29 req/s, p95 9.1 s) |
+| Load-balanced stack (`deploy/scale`) | Requests split 50/50; MCP works across replicas; replica reads and replica write rejection confirmed; 0 errors when a replica was stopped mid-burst |
+| Spoofed X-Forwarded-For | Now shares one quota (previously minted a new quota per value) |
+| Landing page | Shows counts measured by `/api/stats`; the invented "127+ / 4,200+ / 12 countries" figures are removed |
+
+The decisions are in ADR-002 to ADR-006 and the 12-step map in `ARCHITECTURE.md`.
+Two gaps remain open:
+
+* `style-src 'unsafe-inline'` is still in the CSP.
+* Services obtain sessions from module factories rather than an injected unit of work.
+
 ## Current local evidence
 
 | Check | Result | Evidence boundary |
