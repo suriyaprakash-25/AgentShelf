@@ -1,22 +1,34 @@
 """Budget-bound chat through the normal remote MCP SDK client, with explicit confirmation."""
 
 import asyncio
+import contextlib
 import copy
 import json
 import uuid
 from datetime import timedelta
 
 from mcp import Client
+from mcp.client.streamable_http import create_mcp_http_client, streamable_http_client
 from sqlalchemy import select
-from sqlalchemy.dialects.postgresql import insert
 
-from app import llm, paypal
+from app import llm, paypal, rate_limits
 from app.config import get_settings
 from app.db import session_factory
 from app.errors import DomainError
 from app.guards import parse_id
 from app.listing_workflow import caption_text, chat_text
-from app.models import AgentSession, Quote, RateBucket, utcnow
+from app.models import AgentSession, Quote, utcnow
+
+BUYER_TOOLS = frozenset({"search_products", "get_quote", "get_order_status"})
+SESSION_SCOPED_TOOLS = frozenset({"get_quote", "get_order_status"})
+DESTINATION_SCOPED_TOOLS = frozenset({"search_products", "get_quote"})
+CHAT_LEASE = timedelta(seconds=90)
+CHAT_TURN_TIMEOUT_SECONDS = 60
+MAX_MODEL_ROUNDS = 6
+MAX_TOOL_CALLS_PER_ROUND = 4
+HISTORY_LIMIT = 24
+PRIVATE_RESULT_KEYS = frozenset({"image_url", "product_url", "ship_to", "email", "address"})
+UNTRUSTED_TEXT_KEYS = frozenset({"title", "description", "store_name"})
 
 
 def acquire(session_id, message, confirmation):
@@ -34,17 +46,6 @@ def acquire(session_id, message, confirmation):
             raise DomainError(
                 "CHAT_BUSY", "Wait for the current reply before sending another.", 409
             )
-        key = f"chat:{session_id}"
-        db.execute(
-            insert(RateBucket)
-            .values(key=key, used=0, expires_at=now + timedelta(minutes=1))
-            .on_conflict_do_nothing()
-        )
-        bucket = db.scalar(select(RateBucket).where(RateBucket.key == key).with_for_update())
-        if bucket.expires_at <= now:
-            bucket.used, bucket.expires_at = 0, now + timedelta(minutes=1)
-        if bucket.used >= 20:
-            raise DomainError("RATE_LIMITED", "You can send 20 messages per minute.", 429)
         if confirmation:
             quote = db.get(Quote, confirmation)
             if (
@@ -56,8 +57,12 @@ def acquire(session_id, message, confirmation):
                 raise DomainError(
                     "CONFIRMATION_INVALID", "Request and review a fresh quote before checkout.", 409
                 )
-        bucket.used += 1
-        session.chat_lease, session.chat_lease_until = token, now + timedelta(seconds=90)
+        # Counted last so a busy lease or stale confirmation does not consume the quota.
+        policy = rate_limits.CHAT_PER_SESSION
+        rate_limits.consume(
+            db, f"chat:{session_id}", policy.limit, policy.window_seconds, policy.message
+        )
+        session.chat_lease, session.chat_lease_until = token, now + CHAT_LEASE
         return {
             "token": token,
             "history": copy.deepcopy(session.chat_history),
@@ -72,7 +77,7 @@ def finish(session_id, state, history, pending):
             select(AgentSession).where(AgentSession.id == session_id).with_for_update()
         )
         if session and session.chat_lease == state["token"]:
-            history = history[-24:]
+            history = history[-HISTORY_LIMIT:]
             while history and not (
                 history[0]["role"] == "user" and isinstance(history[0]["content"], str)
             ):
@@ -99,13 +104,29 @@ def quote_review(session_id, quote_id):
         }
 
 
+@contextlib.asynccontextmanager
+async def mcp_client(session_id):
+    """Connect through the public Streamable HTTP endpoint, like any outside agent.
+
+    A short-lived signed header lets the edge limiter count this traffic against the
+    buyer session instead of the server's own egress IP, which all buyers share.
+    """
+    headers = {rate_limits.PLAYGROUND_HEADER: rate_limits.playground_token(session_id)}
+    async with create_mcp_http_client(headers=headers) as http_client:
+        transport = streamable_http_client(
+            get_settings().public_api_url + "/mcp", http_client=http_client
+        )
+        async with Client(transport) as client:
+            yield client
+
+
 async def events(session_id, state, country, confirmation=None):
     history = state["history"]
     safe_history = copy.deepcopy(history)
     pending = confirmation
     history.append({"role": "user", "content": state["message"] or "Confirm the displayed quote."})
     try:
-        async with asyncio.timeout(60), Client(get_settings().public_api_url + "/mcp") as client:
+        async with asyncio.timeout(CHAT_TURN_TIMEOUT_SECONDS), mcp_client(session_id) as client:
             if confirmation:
                 args = {"quote_id": str(confirmation), "session_id": str(session_id)}
                 yield {
@@ -129,7 +150,7 @@ async def events(session_id, state, country, confirmation=None):
                 discovered = await client.list_tools()
                 tools = []
                 for tool in discovered.tools:
-                    if tool.name not in {"search_products", "get_quote", "get_order_status"}:
+                    if tool.name not in BUYER_TOOLS:
                         continue
                     schema = copy.deepcopy(tool.input_schema)
                     schema.get("properties", {}).pop("session_id", None)
@@ -143,7 +164,7 @@ async def events(session_id, state, country, confirmation=None):
                             "input_schema": schema,
                         }
                     )
-                for _ in range(6):
+                for _ in range(MAX_MODEL_ROUNDS):
                     blocks = await llm.buyer_turn(history, tools, state["budget"], country)
                     # Only text and tool_use blocks are persisted; no provider reasoning blocks.
                     blocks = [b for b in blocks if b.get("type") in {"text", "tool_use"}]
@@ -155,21 +176,21 @@ async def events(session_id, state, country, confirmation=None):
                     if not uses:
                         safe_history = copy.deepcopy(history)
                         break
-                    if len(uses) > 4:
+                    if len(uses) > MAX_TOOL_CALLS_PER_ROUND:
                         raise DomainError("AGENT_LIMIT", "Try a simpler shopping request.")
                     results = []
                     for use in uses:
                         name, args = use["name"], copy.deepcopy(use["input"])
-                        if name not in {"search_products", "get_quote", "get_order_status"}:
+                        if name not in BUYER_TOOLS:
                             data = DomainError(
                                 "CONFIRMATION_REQUIRED",
                                 "The human must confirm the displayed quote.",
                             ).payload()
                         else:
                             args.pop("session_id", None)
-                            if name != "search_products":
+                            if name in SESSION_SCOPED_TOOLS:
                                 args["session_id"] = str(session_id)
-                            if name in {"search_products", "get_quote"}:
+                            if name in DESTINATION_SCOPED_TOOLS:
                                 args["ship_to_country"] = country
                             yield {
                                 "type": "tool_call",
@@ -229,9 +250,9 @@ def model_data(data):
         return data
     clean = {}
     for key, value in data.items():
-        if key in {"image_url", "product_url", "ship_to", "email", "address"}:
+        if key in PRIVATE_RESULT_KEYS:
             continue
-        if key in {"title", "description", "store_name"} and isinstance(value, str):
+        if key in UNTRUSTED_TEXT_KEYS and isinstance(value, str):
             try:
                 value = caption_text(value)
             except DomainError:

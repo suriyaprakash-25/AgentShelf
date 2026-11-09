@@ -230,13 +230,32 @@ def test_untrusted_origin_cannot_request_or_redeem_links(db_clean, delivery):
 
 
 def test_forwarded_ip_isolated_per_client_in_deployed_proxy_mode(db_clean, delivery, monkeypatch):
+    """The trusted proxy appends the real peer; that rightmost hop is the quota identity."""
     monkeypatch.setattr(get_settings(), "app_env", "staging")
     monkeypatch.setattr(get_settings(), "frontend_url", ORIGIN["origin"])
+    monkeypatch.setattr(get_settings(), "trusted_proxy_hops", 1)
     with TestClient(create_app(), base_url="https://testserver") as client:
         for i in range(4):
             res = client.post(
                 "/api/auth/request-link",
-                headers={**ORIGIN, "x-forwarded-for": f"203.0.113.{10 + i}, 10.0.0.1"},
+                headers={**ORIGIN, "x-forwarded-for": f"198.51.100.7, 203.0.113.{10 + i}"},
                 json={"email": f"seller{i}@example.invalid"},
             )
             assert res.status_code == 202
+
+
+def test_spoofed_forwarded_prefix_cannot_mint_new_quota(db_clean, delivery, monkeypatch):
+    """Client-supplied hops left of the proxy's entry must not change the identity."""
+    monkeypatch.setattr(get_settings(), "app_env", "staging")
+    monkeypatch.setattr(get_settings(), "frontend_url", ORIGIN["origin"])
+    monkeypatch.setattr(get_settings(), "trusted_proxy_hops", 1)
+    with TestClient(create_app(), base_url="https://testserver") as client:
+        statuses = [
+            client.post(
+                "/api/auth/request-link",
+                headers={**ORIGIN, "x-forwarded-for": f"1.1.1.{i}, 203.0.113.99"},
+                json={"email": f"spoof{i}@example.invalid"},
+            ).status_code
+            for i in range(4)
+        ]
+    assert statuses == [202, 202, 202, 429]

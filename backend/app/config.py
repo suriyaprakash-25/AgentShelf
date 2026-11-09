@@ -16,6 +16,25 @@ class Settings(BaseSettings):
 
     app_env: Literal["local", "test", "staging", "production"] = "local"
     database_url: str
+    # Optional streaming replica for anonymous catalog reads; falls back to the primary.
+    database_read_url: str | None = None
+    db_pool_size: int = Field(default=10, ge=1, le=100)
+    db_max_overflow: int = Field(default=10, ge=0, le=100)
+    db_pool_timeout_seconds: int = Field(default=5, ge=1, le=60)
+    db_connect_timeout_seconds: int = Field(default=5, ge=1, le=60)
+    # Bounds a hung query and, via tcp_user_timeout, unacknowledged writes to a lost host.
+    db_statement_timeout_ms: int = Field(default=15_000, ge=1_000, le=600_000)
+    db_network_timeout_ms: int = Field(default=10_000, ge=1_000, le=120_000)
+    # Reverse proxies that append X-Forwarded-For. Unset means one in staging/production
+    # (the platform load balancer) and none locally, where the header is never trusted.
+    trusted_proxy_hops: int | None = Field(default=None, ge=0, le=5)
+    # Shared HMAC key for signed internal calls; derived from DATABASE_URL when unset.
+    service_signing_key: SecretStr | None = None
+    # Client-side deadlines: a hung (not just unreachable) dependency still yields a 503.
+    request_deadline_seconds: float = Field(default=15, ge=1, le=120)
+    provider_request_deadline_seconds: float = Field(default=75, ge=5, le=300)
+    # Seconds to reuse anonymous catalog reads in-process; 0 disables the cache.
+    public_cache_seconds: int = Field(default=10, ge=0, le=300)
     public_api_url: str = "http://localhost:8000"
     frontend_url: str = "http://localhost:5173"
     paypal_mode: Literal["sandbox", "live"] = "sandbox"
@@ -49,8 +68,9 @@ class Settings(BaseSettings):
         """Reject unsafe or incomplete deployed configurations."""
         if self.browser_sentry_dsn:
             parse_browser_sentry_dsn(self.browser_sentry_dsn)
-        if not self.database_url.startswith("postgresql+psycopg://"):
-            raise ValueError("DATABASE_URL must use postgresql+psycopg://")
+        for url in (self.database_url, self.database_read_url):
+            if url is not None and not url.startswith("postgresql+psycopg://"):
+                raise ValueError("Database URLs must use postgresql+psycopg://")
         if self.paypal_mode == "live" and (
             not self.live_checkout_enabled or not self.live_merchant_id
         ):

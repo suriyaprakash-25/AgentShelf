@@ -11,7 +11,7 @@ import uvicorn
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
-from app import buyer_agent, llm, quotes
+from app import buyer_agent, llm, quotes, rate_limits
 from app.config import get_settings
 from app.db import session_factory
 from app.errors import DomainError
@@ -124,6 +124,13 @@ def test_agent_uses_real_mcp_and_human_confirmation(socket_server, provider, mon
         assert db.query(Order).count() == 1
         assert db.get(AgentSession, uuid.UUID(session)).pending_quote_id is None
         assert db.get(AgentSession, uuid.UUID(session)).chat_lease is None
+        # Real HTTP MCP traffic was counted against this buyer session, not the shared
+        # server IP that every Playground user would otherwise exhaust together.
+        session_bucket = db.get(
+            RateBucket, rate_limits.hashed_key("mcp-session", uuid.UUID(session))
+        )
+        assert session_bucket is not None and session_bucket.used >= 4
+        assert db.get(RateBucket, rate_limits.hashed_key("mcp", "127.0.0.1")) is None
 
 
 def test_concurrent_chat_and_quote_ownership_and_quota(db_clean):

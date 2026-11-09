@@ -14,6 +14,7 @@ from app.listing_workflow import chat_text
 from app.models import Order, Product
 
 router = APIRouter()
+ANALYST_TIMEOUT_SECONDS = 45
 
 
 def summary(seller_id):
@@ -62,10 +63,10 @@ async def chat(body: AnalystInput, request: Request, response: Response):
     seller_id, _ = auth.seller_access(request, write=True)
     response.headers["Cache-Control"] = "no-store"
     message = chat_text(body.message)
-    await asyncio.to_thread(rate_limits.consume_ip, str(seller_id), "studio_analyst", 20)
+    await asyncio.to_thread(rate_limits.enforce, rate_limits.STUDIO_ANALYST, seller_id)
     facts = await asyncio.to_thread(summary, seller_id)
     try:
-        async with asyncio.timeout(45):
+        async with asyncio.timeout(ANALYST_TIMEOUT_SECONDS):
             text = await llm.analytics_summary(message, json.dumps(facts))
     except TimeoutError:
         raise DomainError(

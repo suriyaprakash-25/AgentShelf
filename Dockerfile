@@ -20,4 +20,9 @@ RUN useradd --create-home --uid 10001 agentshelf && chown -R agentshelf:agentshe
 USER agentshelf
 ENV PATH="/app/backend/.venv/bin:$PATH"
 EXPOSE 8000
-CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
+# Workers share nothing in-process that correctness depends on (quotas, jobs and MCP are
+# stateless or in Postgres), so WEB_CONCURRENCY scales a container and a load balancer
+# scales across containers. Only the listed proxy addresses may rewrite client info;
+# quota identity is taken from the trusted rightmost X-Forwarded-For hop in the app.
+ENV WEB_CONCURRENCY=2 FORWARDED_ALLOW_IPS=127.0.0.1
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WEB_CONCURRENCY} --proxy-headers --forwarded-allow-ips=\"${FORWARDED_ALLOW_IPS}\" --timeout-keep-alive 5"]

@@ -8,35 +8,28 @@ from datetime import timedelta
 
 from fastapi import Request
 from sqlalchemy import select
-from sqlalchemy.dialects.postgresql import insert
 
-from app import email
+from app import email, rate_limits
 from app.config import get_settings
 from app.db import session_factory
 from app.errors import DomainError
 from app.models import LoginChallenge, RateBucket, Seller, SellerSession, utcnow
 
 COOKIE = "agentshelf_seller"
+LINK_TTL = timedelta(minutes=15)
+SESSION_TTL = timedelta(days=7)
+DEFAULT_SHIPPING_MINOR = {"US": 800, "GB": 1000}
+DEV_ORIGINS = frozenset({"http://localhost:5173", "http://127.0.0.1:5173"})
 
 
 def digest(token):
     return hashlib.sha256(token.encode()).hexdigest()
 
 
-def consume_quota(db, key, limit=3):
-    now = utcnow()
-    db.execute(
-        insert(RateBucket)
-        .values(key=key, used=0, expires_at=now + timedelta(minutes=10))
-        .on_conflict_do_nothing()
-    )
-    bucket = db.scalar(select(RateBucket).where(RateBucket.key == key).with_for_update())
-    if bucket.expires_at <= now:
-        bucket.used = 0
-        bucket.expires_at = now + timedelta(minutes=10)
-    if bucket.used >= limit:
-        raise DomainError("RATE_LIMITED", "Wait ten minutes before requesting another link.", 429)
-    bucket.used += 1
+def consume_quota(db, key, limit=rate_limits.SIGN_IN_LINKS.limit):
+    """Count one sign-in link against an already-hashed email or IP key."""
+    policy = rate_limits.SIGN_IN_LINKS
+    rate_limits.consume(db, key, limit, policy.window_seconds, policy.message)
 
 
 def request_link(address, profile, ip):
@@ -52,7 +45,7 @@ def request_link(address, profile, ip):
                 token_hash=digest(token),
                 email=address,
                 profile=profile,
-                expires_at=utcnow() + timedelta(minutes=15),
+                expires_at=utcnow() + LINK_TTL,
             )
         )
     # URL fragments are not included in HTTP requests or ordinary access logs.
@@ -91,7 +84,7 @@ def redeem(token):
                 store_slug="store-" + uuid.uuid4().hex[:12],
                 status="active",
                 consent_at=utcnow(),
-                shipping_rates={"US": 800, "GB": 1000},
+                shipping_rates=dict(DEFAULT_SHIPPING_MINOR),
             )
             db.add(seller)
             db.flush()
@@ -118,10 +111,25 @@ def redeem(token):
                 token_hash=digest(session_token),
                 seller_id=seller.id,
                 csrf_token=secrets.token_hex(32),
-                expires_at=utcnow() + timedelta(days=7),
+                expires_at=utcnow() + SESSION_TTL,
             )
         )
     return session_token
+
+
+def allowed_origins():
+    """Browser origins allowed to make credentialed state changes."""
+    settings = get_settings()
+    origins = {settings.frontend_url}
+    if settings.app_env in {"local", "test"}:
+        origins.update(DEV_ORIGINS)
+    return origins
+
+
+def require_origin(request):
+    """Reject cross-site form posts before they reach unauthenticated state changes."""
+    if request.headers.get("origin") not in allowed_origins():
+        raise DomainError("CSRF_REJECTED", "Open AgentShelf to request sign-in.", 403)
 
 
 def seller_access(request: Request, write=False):
@@ -135,11 +143,8 @@ def seller_access(request: Request, write=False):
         seller = db.get(Seller, session.seller_id)
         if not seller or seller.status != "active":
             raise DomainError("SELLER_UNAVAILABLE", "This seller account is unavailable.", 403)
-        allowed_origins = {get_settings().frontend_url}
-        if get_settings().app_env in {"local", "test"}:
-            allowed_origins.update({"http://localhost:5173", "http://127.0.0.1:5173"})
         if write and (
-            request.headers.get("origin") not in allowed_origins
+            request.headers.get("origin") not in allowed_origins()
             or not hmac.compare_digest(request.headers.get("x-csrf-token", ""), session.csrf_token)
         ):
             raise DomainError("CSRF_REJECTED", "Reload your dashboard before trying again.", 403)
