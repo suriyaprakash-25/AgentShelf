@@ -45,6 +45,9 @@ export type Quote = {
 };
 
 const base = import.meta.env.VITE_API_URL || "";
+// Streamed chat goes straight to the API host when the page host's proxy buffers
+// server-sent events (Vercel rewrites); the endpoint needs no cookies.
+const streamBase = import.meta.env.VITE_STREAM_API_URL || "";
 export function mediaUrl(path: string) {
   return base + path;
 }
@@ -53,9 +56,9 @@ export async function chatEvents(
   receive: (event: Record<string, unknown>) => void,
   signal: AbortSignal,
 ) {
-  const response = await fetch(base + "/api/playground/chat", {
+  const response = await fetch((streamBase || base) + "/api/playground/chat", {
     method: "POST",
-    credentials: "include",
+    credentials: streamBase ? "omit" : "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
     signal,
