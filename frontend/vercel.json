@@ -4,13 +4,13 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://agentshelf-api.onrender.com/api/:path*" },
-    { "source": "/mcp", "destination": "https://agentshelf-api.onrender.com/mcp" },
-    { "source": "/mcp/:path*", "destination": "https://agentshelf-api.onrender.com/mcp/:path*" },
-    { "source": "/.well-known/:path*", "destination": "https://agentshelf-api.onrender.com/.well-known/:path*" },
-    { "source": "/checkout/:path*", "destination": "https://agentshelf-api.onrender.com/checkout/:path*" },
-    { "source": "/webhooks/:path*", "destination": "https://agentshelf-api.onrender.com/webhooks/:path*" },
-    { "source": "/healthz", "destination": "https://agentshelf-api.onrender.com/healthz" },
+    { "source": "/api/:path*", "destination": "https://suriya-25-agentshelf-api.hf.space/api/:path*" },
+    { "source": "/mcp", "destination": "https://suriya-25-agentshelf-api.hf.space/mcp" },
+    { "source": "/mcp/:path*", "destination": "https://suriya-25-agentshelf-api.hf.space/mcp/:path*" },
+    { "source": "/.well-known/:path*", "destination": "https://suriya-25-agentshelf-api.hf.space/.well-known/:path*" },
+    { "source": "/checkout/:path*", "destination": "https://suriya-25-agentshelf-api.hf.space/checkout/:path*" },
+    { "source": "/webhooks/:path*", "destination": "https://suriya-25-agentshelf-api.hf.space/webhooks/:path*" },
+    { "source": "/healthz", "destination": "https://suriya-25-agentshelf-api.hf.space/healthz" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

@@ -6,8 +6,11 @@ root="$(cd "$(dirname "$0")/../.." && pwd)"
 out="${1:?output directory required}"
 rm -rf "$out"
 mkdir -p "$out"
-cp "$root/deploy/huggingface/Dockerfile" "$root/deploy/huggingface/start.sh" \
-  "$root/deploy/huggingface/README.md" "$out/"
+# Free Spaces use the Gradio SDK runtime: it installs requirements.txt and runs
+# space_main.py, which serves the FastAPI app on port 7860 (the Dockerfile is the
+# paid Docker-Space path).
+cp "$root/deploy/huggingface/README.md" "$root/deploy/huggingface/space_main.py" \
+  "$root/deploy/huggingface/requirements.txt" "$out/"
 cp -r "$root/seed" "$out/seed"
 mkdir -p "$out/backend"
 (cd "$root/backend" && git ls-files -- . ':!:tests' | while read -r f; do
