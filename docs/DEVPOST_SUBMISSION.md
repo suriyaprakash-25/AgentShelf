@@ -1,48 +1,104 @@
-# AgentShelf — Devpost Submission & Demo Video Guide
+# AgentShelf — Devpost submission
 
-> **Note:** Preserve placeholder credentials until staging gates (`Gate 1`, `Gate 2`, `Gate 3`) are verified with real provider keys via `make phase-b-preflight` and `backend/verify_phase_b.py`.
+Copy each block into the matching Devpost field. Every number below comes from a recorded
+run (see `docs/STATUS.md`); keep it that way when editing.
 
----
+## Elevator pitch (183 / 200 characters)
 
-## 1. Elevator Pitch (One Sentence)
+Turn WhatsApp product photos into a store any AI shopping agent can find, quote and buy from, with human-approved PayPal checkout. Made by small sellers, found by AI, paid via PayPal.
 
-**AgentShelf** turns WhatsApp product photos and voice notes from independent artisans into an AI-discoverable MCP storefront with server-verified quotes, human-approved PayPal Orders v2 checkout, and automated tracking sync.
-
----
-
-## 2. Devpost Project Description
-
-### Inspiration
-Millions of artisans and small merchants sell over WhatsApp and social DMs using photos and voice notes, yet remain invisible to AI shopping agents that require structured schemas, deterministic inventory locks, and programmable checkout APIs. We built **AgentShelf** so a textile studio in Jaipur—or any independent craftsperson—can publish an agent-ready storefront in 60 seconds without surrendering control of pricing, stock, or payment approval.
-
-### What It Does
-- **WhatsApp & Web Listing Studio (`M-2`, `S-3`)**: Sellers send up to 4 product photos (plus an optional voice note or caption). Multimodal AI drafts a structured listing (`title`, `description`, `category`, `attributes`, `tags`, and a non-authoritative `suggested_price_minor`), while the seller explicitly sets and confirms the real price and stock before anything goes live.
-- **MCP Streamable HTTP Server (`M-4`, `S-4`, `S-5`)**: Exposes `search_products`, `get_quote`, `create_checkout`, and `get_order_status` over `/mcp`, backed by `/.well-known/mcp.json` discovery metadata and `schema.org/Product` JSON-LD on every public store page.
-- **Server-Owned Quotes & PayPal Orders v2 (`M-5`, `M-6`, `M-7`, `M-8`)**: AI models never invent prices, shipping, budgets, or payment status. Postgres row locks (`SELECT ... FOR UPDATE`) enforce stock and cumulative session budgets in integer minor units, create PayPal Orders v2 checkouts with direct merchant `payee.email_address`, verify 5-header PayPal webhook signatures, notify the seller on WhatsApp, and push shipping tracking back to PayPal (`POST /v1/shipping/trackers-batch`).
-- **Seller Copilot & Multi-Language Storefront (`S-1`, `S-2`, `S-6`)**: Sellers can request 7-day sales & low-stock summaries, issue PayPal capture refunds (`POST /v2/payments/captures/{id}/refund`), send PayPal Invoices (`POST /v2/invoicing/invoices`), mirror products to the PayPal Catalog (`POST /v1/catalogs/products`), and let buyers translate listing copy while keeping server-side USD pricing authoritative.
-
-### How We Built It
-- **Backend**: Python 3.12, FastAPI, official `mcp` Python SDK (Streamable HTTP transport), SQLAlchemy 2, Alembic, PostgreSQL 17/18 with full-text GIN indexing, Pillow EXIF-stripping image pipeline, and a durable PostgreSQL job queue (`SELECT ... FOR UPDATE SKIP LOCKED`).
-- **Frontend**: React 19, TypeScript, Vite, AG Grid Community, lazy-loaded AG Studio analytics widget, and SSE streaming Buyer Playground.
-- **Security & Privacy**: Zero PII or street addresses sent to LLMs; strict input/caption/chat prompt-injection guards; single-use hashed magic links; CSRF double-submit tokens; and privacy-scrubbed Sentry telemetry.
+## About the project (paste everything between the lines)
 
 ---
 
-## 3. 2:58 Demo Video Shot List (`ROADMAP_SOURCE.md` §13)
+## Inspiration
 
-| Timestamp | Scene | Action & Key Visuals |
+Meera makes block-printed scarves in Jaipur. Her whole business lives in WhatsApp: photos, voice notes, "is this still available?", a PayPal link typed by hand. Buyers are starting to shop through AI assistants, and those assistants can't read a WhatsApp thread. They need a catalog they can search, a price they can trust and a checkout they can call.
+
+PayPal's agentic commerce work reaches merchants who already sit on a platform. Sellers like Meera aren't on any platform, so they're about to become invisible. We wanted to give them an agent-ready store without asking them to learn e-commerce.
+
+## What it does
+
+**For the seller: photos in, store out.**
+- The seller sends product photos (WhatsApp or our web Listing Studio). A vision model drafts the title, description, category, attributes and a *suggested* price.
+- **AI never sets the price.** The seller confirms price and stock before anything goes live, then edits by text (`price 45 #12`, `stock 0 #12`).
+- Every store gets a public page with schema.org product data and its own **MCP endpoint**.
+
+**For the buyer's agent: a store it can actually buy from.**
+- Any MCP client can call four tools: `search_products`, `get_quote`, `create_checkout`, `get_order_status`.
+- `get_quote` snapshots item price, shipping and an expiry on the server. The model can't invent or change an amount.
+- `create_checkout` locks stock and the shopper's budget in Postgres, then creates a **PayPal Orders v2** order paid straight to that seller.
+- **A human always approves the payment on PayPal.** Agents find and propose; people pay.
+
+**After the sale.** Verified PayPal webhooks update the order, the seller gets a WhatsApp alert, and `track #A123 DHL 1234567890` pushes tracking to the PayPal order. A seller dashboard built on AG Grid and AG Studio shows products and orders, plus refunds, invoices and a 7-day sales summary.
+
+**Try it without installing anything:** the Buyer Playground is a chat with an AI shopping agent wired to our real MCP server. Every tool call shows live, under a budget cap.
+
+## How we built it
+
+- **Backend:** Python, FastAPI and the official MCP Python SDK (stateless Streamable HTTP), so the MCP server scales behind a load balancer. SQLAlchemy 2 and Alembic on PostgreSQL 17.
+- **Money is integer minor units end to end.** Reservations use `SELECT … FOR UPDATE`; the job queue uses `SKIP LOCKED` with LISTEN/NOTIFY wake-ups, retries and dedupe.
+- **PayPal (REST, idempotent `PayPal-Request-Id`):** Orders v2 create and capture, webhook signature verification, order tracking, refunds, invoicing, Catalog Products and dispute reads. A circuit breaker isolates PayPal outages.
+- **AI:** a provider strategy over Gemini and Claude. A strict schema checks every draft, and we screen captions and chat for personal data and prompt injection.
+- **Frontend:** React 19, TypeScript and Vite, with AG Grid and AG Studio for the seller dashboard.
+- **Storage:** private Cloudflare R2 for photos, with EXIF stripped first.
+- **Quality:** 340 backend tests against real Postgres (locking, constraints, migrations) and 16 Playwright browser tests with axe accessibility checks.
+
+## Challenges we ran into
+
+- **Gemini 3 tool calling broke on round two.** The first real-key run showed that every buyer chat failed after the first search: Gemini 3 requires its `thoughtSignature` back on each function call. Our provider-neutral history now carries it and strips it before any other model sees it.
+- **Reasoning ate the answer.** One listing draft spent 1,150 of 1,200 output tokens thinking, so the JSON got cut off. We now set an explicit reasoning level and reserve a separate token allowance. Real drafts take 4.4 s and 10.0 s.
+- **Agents and money don't mix by default.** We made the server the only source of truth for price, stock, budget and payment status, and kept a human approval step on every payment.
+- **Load spikes and failures.** We moved to ranked full-text search with indexes, a short read-through cache and an optional read replica. Request deadlines turn a hung database into a fast 503 instead of a hang.
+
+## Accomplishments that we're proud of
+
+- **A real end-to-end agent purchase in PayPal sandbox:** Gemini made 4 MCP searches and requested a quote in 12.7 s, and after human confirmation the order was created in 3.1 s. Our $40.00 and PayPal's $40.00 match, paid to the right seller.
+- **Load:** 151 requests/s on product search from a single local worker (p95 2.8 s, 0 errors at 100 concurrent requests).
+- **Failover:** zero errors across 2,000 requests while one of two web replicas was stopped mid-burst.
+- **Accessibility:** axe finds zero violations on our phone-width screens.
+
+## What we learned
+
+Agentic commerce is mostly a trust problem. The model is great at finding and explaining; it shouldn't own prices or payments. Clear tool contracts plus a human approval step make agent shopping feel safe. Testing against real providers early catches the bugs that mocks hide.
+
+## What's next for AgentShelf
+
+- A pilot with real sellers in India selling to overseas buyers. Live payments are enabled one merchant at a time, after PayPal eligibility checks.
+- More agent surfaces through the same MCP endpoint, and voice-first listing in regional languages.
+- Payouts for sellers who can't receive payments directly, and shipping-label integration.
+
+---
+
+## Built with (Devpost tags)
+
+python, fastapi, postgresql, sqlalchemy, alembic, model-context-protocol, paypal, paypal-orders-v2, paypal-webhooks, gemini, anthropic-claude, react, typescript, vite, ag-grid, ag-studio, cloudflare-r2, whatsapp-cloud-api, resend, docker, nginx, render, playwright, pillow, server-sent-events
+
+## "Try it out" links
+
+1. GitHub: https://github.com/suriyaprakash-25/AgentShelf
+2. Live demo: the Render URL once deployed (Buyer Playground at `/playground`)
+3. MCP endpoint: `<live URL>/mcp`, discovery at `<live URL>/.well-known/mcp.json`
+
+## Image gallery (3:2, under 5 MB each)
+
+1. Landing page hero.
+2. Buyer Playground mid-conversation, with the MCP tool trace visible.
+3. Quote card, then the PayPal sandbox approval screen.
+4. Seller Listing Studio showing an AI draft from a photo.
+5. Seller dashboard (AG Grid products and orders).
+6. A public store page (`/s/meera-jaipur`).
+7. Architecture diagram (from `docs/ARCHITECTURE.md`).
+
+## Demo video (YouTube, public or unlisted, under 3:00)
+
+| Time | Scene | Say |
 | --- | --- | --- |
-| `0:00–0:20` | **The Problem** | Show Meera in Jaipur with textile photos on WhatsApp vs. an AI shopping agent unable to buy from unindexed chat threads. |
-| `0:20–0:55` | **WhatsApp Photo + Voice Listing** | Send product photo + voice note on WhatsApp → AI returns structured draft → Meera sets `price 45`, `stock 4`, and replies `YES` → Product appears live on `/s/meera-jaipur`. |
-| `0:55–1:40` | **AI Buyer Playground (MCP)** | Open `/playground` with a `$60.00` budget and `GB` destination → Ask `"Find an indigo cotton scarf under $60 shipped to the UK"` → Show live MCP tool trace (`search_products` → `get_quote`) in the right-hand Activity panel. |
-| `1:40–2:15` | **PayPal Sandbox Checkout** | Click **Confirm total & continue to PayPal** → Approve in PayPal Sandbox buyer popup → Return to `/receipt` showing `paid` status. |
-| `2:15–2:40` | **Webhook, WhatsApp Alert & Tracking** | Show verified `PAYMENT.CAPTURE.COMPLETED` webhook → Meera receives formatted WhatsApp paid alert → Meera replies `ship #1001 DHL 1234567890` → PayPal tracker verified and `/receipt` shows `DHL 1234567890`. |
-| `2:40–2:58` | **Seller Dashboard & Copilot** | Show `/dashboard` with AG Grid catalog/orders, Seller Copilot 7-day summary, PayPal Catalog mirror, and `/.well-known/mcp.json`. |
+| 0:00–0:15 | Store page for Meera's Jaipur Studio | "Meera sells scarves from Jaipur on WhatsApp. AI shopping agents can't see her. AgentShelf fixes that." |
+| 0:15–0:50 | Listing Studio: upload a scarf photo, draft appears, set price and stock, publish | "She sends a photo. AI drafts the listing in seconds, but she sets the price. AI never does." |
+| 0:50–1:40 | Buyer Playground: "a handmade gift from Jaipur under $60, shipped to the US"; tool trace shows `search_products`, then `get_quote` | "Any AI agent can shop her store through MCP. The server writes the quote, so the model can't change the price." |
+| 1:40–2:20 | Confirm, then PayPal sandbox approval, then receipt | "A human approves every payment on PayPal. The order is paid straight to Meera." |
+| 2:20–2:45 | Seller dashboard: the new paid order | "Meera sees the order and gets a WhatsApp alert." (Show the alert only if it was recorded live.) |
+| 2:45–2:58 | Logo and links | "AgentShelf: made by you, found by AI, paid with PayPal." |
 
----
-
-## 4. Pre-Recording Reset Command
-
-```bash
-make demo-reset
-```
+Record against the deployed URL when possible, and only show flows that work live on camera.
