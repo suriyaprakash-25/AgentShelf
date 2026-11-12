@@ -50,6 +50,8 @@ def report_zero_gpu_startup():
 def main():
     report_zero_gpu_startup()
     os.environ.setdefault("SERVE_FRONTEND", "false")
+    # A Space cannot reach its own public URL; the Playground's MCP client uses loopback.
+    os.environ.setdefault("INTERNAL_API_URL", f"http://127.0.0.1:{PORT}")
     os.chdir(BACKEND)
     sys.path.insert(0, str(BACKEND))
     subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"], check=True)

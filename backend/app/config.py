@@ -36,13 +36,16 @@ class Settings(BaseSettings):
     # Seconds to reuse anonymous catalog reads in-process; 0 disables the cache.
     public_cache_seconds: int = Field(default=10, ge=0, le=300)
     public_api_url: str = "http://localhost:8000"
+    # False when another host (Vercel) serves the browser app and forwards API paths
+    # here; the deployed web service then starts without bundled frontend assets.
+    serve_frontend: bool = True
+    # Loopback address for the server's own calls to itself (the Playground's MCP
+    # client). Hugging Face Spaces cannot reach their own public URL from inside.
+    internal_api_url: str | None = None
     # The host this API answers on directly. Hosting platforms set it automatically
     # (Hugging Face Spaces: SPACE_HOST; Render: RENDER_EXTERNAL_HOSTNAME). When the
     # browser origin is a proxy in front of it (Vercel rewrites), MCP also accepts this
     # host and server-side MCP calls go straight to it.
-    # False when another host (Vercel) serves the browser app and forwards API paths
-    # here; the deployed web service then starts without bundled frontend assets.
-    serve_frontend: bool = True
     direct_api_host: str | None = Field(
         default=None,
         validation_alias=AliasChoices("DIRECT_API_HOST", "SPACE_HOST", "RENDER_EXTERNAL_HOSTNAME"),
@@ -93,6 +96,11 @@ class Settings(BaseSettings):
         if self.direct_api_host:
             return "https://" + self.direct_api_host
         return self.public_api_url
+
+    @property
+    def self_call_url(self) -> str:
+        """Base URL for the server's own requests to its API (internal first)."""
+        return (self.internal_api_url or self.direct_api_url).rstrip("/")
 
     @model_validator(mode="after")
     def validate_environment(self):

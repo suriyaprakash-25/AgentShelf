@@ -76,3 +76,11 @@ def test_demo_seed_can_target_a_real_sandbox_payee(monkeypatch):
     with session_factory() as db:
         sellers = db.scalars(select(Seller).where(Seller.store_slug == "meera-jaipur")).all()
     assert [s.paypal_email for s in sellers] == ["sb-demo@business.example.com"]
+
+
+def test_self_calls_prefer_the_internal_loopback_address():
+    assert settings().self_call_url == FRONT
+    assert settings(DIRECT_API_HOST=RENDER_HOST).self_call_url == "https://" + RENDER_HOST
+    cfg = settings(DIRECT_API_HOST=RENDER_HOST, internal_api_url="http://127.0.0.1:7860/")
+    assert cfg.self_call_url == "http://127.0.0.1:7860"
+    assert cfg.direct_api_url == "https://" + RENDER_HOST  # MCP still accepts the public host

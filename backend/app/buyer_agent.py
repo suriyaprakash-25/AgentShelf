@@ -114,7 +114,7 @@ async def mcp_client(session_id):
     headers = {rate_limits.PLAYGROUND_HEADER: rate_limits.playground_token(session_id)}
     async with create_mcp_http_client(headers=headers) as http_client:
         transport = streamable_http_client(
-            get_settings().direct_api_url + "/mcp", http_client=http_client
+            get_settings().self_call_url + "/mcp", http_client=http_client
         )
         async with Client(transport) as client:
             yield client
