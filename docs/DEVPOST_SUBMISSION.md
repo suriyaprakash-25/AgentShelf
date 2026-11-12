@@ -77,8 +77,8 @@ python, fastapi, postgresql, sqlalchemy, alembic, model-context-protocol, paypal
 ## "Try it out" links
 
 1. GitHub: https://github.com/suriyaprakash-25/AgentShelf
-2. Live demo: the Render URL once deployed (Buyer Playground at `/playground`)
-3. MCP endpoint: `<live URL>/mcp`, discovery at `<live URL>/.well-known/mcp.json`
+2. Live demo: https://agentshelf-frontend.vercel.app (Buyer Playground at https://agentshelf-frontend.vercel.app/playground)
+3. MCP endpoint: https://agentshelf-frontend.vercel.app/mcp, discovery at https://agentshelf-frontend.vercel.app/.well-known/mcp.json
 
 ## Image gallery (3:2, under 5 MB each)
 
