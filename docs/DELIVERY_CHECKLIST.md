@@ -54,7 +54,9 @@ Source roadmap acceptance and independent release gates remain separate.
 - [x] 332 backend tests and 16 browser tests pass.
 - [x] Real-credential local run (Nov 9): PayPal sandbox order via real Gemini buyer chat and MCP; R2 upload; two Gemini defects fixed (thought signatures, reasoning budget). See STATUS.md.
 - [ ] Re-run the seller draft and buyer chat with a billed Gemini project (free tier allows 20 requests/day/model).
-- [ ] Replace the expired WhatsApp token with a system-user token; verify domain for Resend; add Sentry DSNs; use a ≥32-byte `SERVICE_SIGNING_KEY`.
+- [x] WhatsApp system-user token (never expires) and 64-character `SERVICE_SIGNING_KEY` verified (Nov 12).
+- [x] Gemini reasoning-budget fix verified with real listing drafts (4.4 s, 10.0 s).
+- [ ] Verify a Resend domain; add Sentry DSNs; confirm `agentshelf_order_paid` template approval.
 - [ ] Verify trusted-proxy hops, HSTS, replica routing, deadlines and the breaker on funded HTTPS staging with real providers.
 - [x] Recovered local Docker: fresh image, non-root API, worker heartbeat, gzip/cache/auth smoke checks.
 - [x] Local mobile storefront: performance 91, accessibility 100, LCP 2.0 seconds.

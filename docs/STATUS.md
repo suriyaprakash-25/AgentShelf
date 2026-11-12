@@ -492,3 +492,19 @@ operators cannot see the reason.
 Local data changes: the fictional seed seller `meera-jaipur` now pays out to the app's
 sandbox business account (per this runbook); the stale `agentshelf_test` database was
 recreated. Backend suite: 340 passed, 1 skipped.
+
+### Credential re-check — 2026-11-12
+
+- WhatsApp: new token is a `SYSTEM_USER` token that never expires, with
+  `whatsapp_business_messaging` and `whatsapp_business_management`. Phone lookup with
+  `appsecret_proof` succeeded (token and `WHATSAPP_APP_SECRET` belong to the same app):
+  Meta test number, `VERIFIED`, quality `GREEN`, `CLOUD_API`. The token cannot list
+  WhatsApp Business Accounts, so `agentshelf_order_paid` template approval was not
+  checked. No message was sent; inbound webhooks still need a public HTTPS URL.
+- `SERVICE_SIGNING_KEY`: now 64 random URL-safe characters.
+- Gemini quota reset; the reasoning-budget fix is verified live at the default `low`
+  level: two real photo drafts (scarf with caption, brass lamp without) returned valid
+  listings in 4.4 s and 10.0 s. Run directly through `llm.draft_listing` (Docker was
+  stopped, so not through the worker). The 20-requests/day free tier is unchanged.
+- Unchanged: `PAYPAL_WEBHOOK_ID`, Sentry DSNs and HTTPS URLs unset; `EMAIL_FROM` on
+  `resend.dev`; `MEDIA_BACKEND=local`.
