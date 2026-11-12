@@ -101,6 +101,7 @@ def create_app():
         observability.setup()
         if (
             settings.app_env in {"staging", "production"}
+            and settings.serve_frontend
             and not (FRONTEND_DIST / "index.html").is_file()
         ):
             raise RuntimeError("Build frontend assets before starting the deployed web service")

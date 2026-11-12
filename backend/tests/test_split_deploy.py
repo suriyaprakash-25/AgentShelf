@@ -36,9 +36,18 @@ def test_hosting_provider_database_urls_select_psycopg():
     assert replica == "postgresql+psycopg://r@h/db"
 
 
+def test_platform_host_variables_are_recognised(monkeypatch):
+    for variable in ("SPACE_HOST", "RENDER_EXTERNAL_HOSTNAME", "DIRECT_API_HOST"):
+        monkeypatch.delenv("SPACE_HOST", raising=False)
+        monkeypatch.delenv("RENDER_EXTERNAL_HOSTNAME", raising=False)
+        monkeypatch.delenv("DIRECT_API_HOST", raising=False)
+        monkeypatch.setenv(variable, "api.example.hf.space")
+        assert settings().direct_api_url == "https://api.example.hf.space"
+
+
 def test_server_side_calls_go_straight_to_the_platform_host():
     assert settings().direct_api_url == FRONT
-    assert settings(render_external_hostname=RENDER_HOST).direct_api_url == "https://" + RENDER_HOST
+    assert settings(DIRECT_API_HOST=RENDER_HOST).direct_api_url == "https://" + RENDER_HOST
 
 
 def mcp_status(cfg, host):
@@ -48,7 +57,7 @@ def mcp_status(cfg, host):
 
 
 def test_mcp_accepts_proxied_and_direct_hosts_but_not_others():
-    cfg = settings(render_external_hostname=RENDER_HOST)
+    cfg = settings(DIRECT_API_HOST=RENDER_HOST)
     assert mcp_status(cfg, RENDER_HOST) == 200
     assert mcp_status(cfg, "agentshelf.example.app") == 200
     assert mcp_status(cfg, "evil.example.com") == 421

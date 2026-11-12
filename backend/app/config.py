@@ -5,7 +5,7 @@ from functools import lru_cache
 from typing import Literal
 from urllib.parse import urlsplit
 
-from pydantic import Field, SecretStr, field_validator, model_validator
+from pydantic import AliasChoices, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -36,10 +36,17 @@ class Settings(BaseSettings):
     # Seconds to reuse anonymous catalog reads in-process; 0 disables the cache.
     public_cache_seconds: int = Field(default=10, ge=0, le=300)
     public_api_url: str = "http://localhost:8000"
-    # Set automatically by Render: the host this API answers on directly. When the
-    # browser origin is a proxy in front of it (for example Vercel rewrites), MCP must
-    # also accept this host and server-side MCP calls go straight to it.
-    render_external_hostname: str | None = None
+    # The host this API answers on directly. Hosting platforms set it automatically
+    # (Hugging Face Spaces: SPACE_HOST; Render: RENDER_EXTERNAL_HOSTNAME). When the
+    # browser origin is a proxy in front of it (Vercel rewrites), MCP also accepts this
+    # host and server-side MCP calls go straight to it.
+    # False when another host (Vercel) serves the browser app and forwards API paths
+    # here; the deployed web service then starts without bundled frontend assets.
+    serve_frontend: bool = True
+    direct_api_host: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("DIRECT_API_HOST", "SPACE_HOST", "RENDER_EXTERNAL_HOSTNAME"),
+    )
     frontend_url: str = "http://localhost:5173"
     paypal_mode: Literal["sandbox", "live"] = "sandbox"
     paypal_client_id: SecretStr | None = None
@@ -83,8 +90,8 @@ class Settings(BaseSettings):
     @property
     def direct_api_url(self) -> str:
         """Where the server reaches its own API, bypassing any browser-facing proxy."""
-        if self.render_external_hostname:
-            return "https://" + self.render_external_hostname
+        if self.direct_api_host:
+            return "https://" + self.direct_api_host
         return self.public_api_url
 
     @model_validator(mode="after")
