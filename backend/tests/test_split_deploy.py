@@ -52,3 +52,18 @@ def test_mcp_accepts_proxied_and_direct_hosts_but_not_others():
     assert mcp_status(cfg, RENDER_HOST) == 200
     assert mcp_status(cfg, "agentshelf.example.app") == 200
     assert mcp_status(cfg, "evil.example.com") == 421
+
+
+def test_demo_seed_can_target_a_real_sandbox_payee(monkeypatch):
+    from sqlalchemy import select
+
+    import seed
+    from app.db import session_factory
+    from app.models import Seller
+
+    monkeypatch.setenv("DEMO_SELLER_PAYPAL_EMAIL", "sb-demo@business.example.com")
+    seed.seed()
+    seed.seed()  # idempotent, and re-points an existing demo seller
+    with session_factory() as db:
+        sellers = db.scalars(select(Seller).where(Seller.store_slug == "meera-jaipur")).all()
+    assert [s.paypal_email for s in sellers] == ["sb-demo@business.example.com"]
