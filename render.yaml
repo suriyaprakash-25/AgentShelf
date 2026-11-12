@@ -13,8 +13,15 @@ services:
         value: 3.12.10
       - key: APP_ENV
         value: staging
+      # Browser traffic arrives via Vercel rewrites, then Render's proxy.
+      - key: TRUSTED_PROXY_HOPS
+        value: "2"
+      - key: SERVICE_SIGNING_KEY
+        generateValue: true
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: agentshelf-staging
+          property: connectionString
       - key: PUBLIC_API_URL
         sync: false
       - key: FRONTEND_URL
@@ -76,7 +83,9 @@ services:
       - key: APP_ENV
         value: staging
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: agentshelf-staging
+          property: connectionString
       - key: PUBLIC_API_URL
         sync: false
       - key: FRONTEND_URL

@@ -64,11 +64,11 @@ def mcp_transport(settings):
     state is needed and the endpoint can sit behind a plain round-robin load balancer.
     """
     server = create_mcp_server()
-    hostname = urlsplit(settings.public_api_url).netloc
+    hosts = {urlsplit(settings.public_api_url).netloc, urlsplit(settings.direct_api_url).netloc}
     app = server.streamable_http_app(
         stateless_http=True,
         transport_security=TransportSecuritySettings(
-            allowed_hosts=[hostname, "localhost:*", "127.0.0.1:*", "testserver"],
+            allowed_hosts=[*sorted(hosts), "localhost:*", "127.0.0.1:*", "testserver"],
             allowed_origins=[settings.frontend_url, settings.public_api_url],
         ),
     )

@@ -5,7 +5,7 @@ from functools import lru_cache
 from typing import Literal
 from urllib.parse import urlsplit
 
-from pydantic import Field, SecretStr, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     # Seconds to reuse anonymous catalog reads in-process; 0 disables the cache.
     public_cache_seconds: int = Field(default=10, ge=0, le=300)
     public_api_url: str = "http://localhost:8000"
+    # Set automatically by Render: the host this API answers on directly. When the
+    # browser origin is a proxy in front of it (for example Vercel rewrites), MCP must
+    # also accept this host and server-side MCP calls go straight to it.
+    render_external_hostname: str | None = None
     frontend_url: str = "http://localhost:5173"
     paypal_mode: Literal["sandbox", "live"] = "sandbox"
     paypal_client_id: SecretStr | None = None
@@ -65,6 +69,23 @@ class Settings(BaseSettings):
     browser_sentry_dsn: str | None = Field(default=None, max_length=2048)
     whatsapp_paid_template: str | None = None
     whatsapp_template_language: str = "en_US"
+
+    @field_validator("database_url", "database_read_url", mode="before")
+    @classmethod
+    def use_psycopg_driver(cls, url):
+        """Accept the plain scheme hosting providers hand out and select psycopg 3."""
+        if isinstance(url, str):
+            for prefix in ("postgres://", "postgresql://"):
+                if url.startswith(prefix):
+                    return "postgresql+psycopg://" + url[len(prefix) :]
+        return url
+
+    @property
+    def direct_api_url(self) -> str:
+        """Where the server reaches its own API, bypassing any browser-facing proxy."""
+        if self.render_external_hostname:
+            return "https://" + self.render_external_hostname
+        return self.public_api_url
 
     @model_validator(mode="after")
     def validate_environment(self):
