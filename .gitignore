@@ -16,3 +16,6 @@ evals/private/
 *.log
 .DS_Store
 config.bat
+
+# env files: never commit secrets
+!.env.example
