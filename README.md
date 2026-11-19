@@ -179,7 +179,7 @@ AgentShelf/
 ├── seed/demo_store.json        # synthetic demo store (meera-jaipur)
 ├── evals/                      # evaluation guide, templates, MCP client config
 ├── deploy/
-│   ├── huggingface/            # single-container API deployment (API + worker + migrations)
+│   ├── huggingface/            # Docker Space: single-container API (API + worker + migrations)
 │   └── scale/                  # nginx + two web replicas + primary/replica Postgres
 ├── docs/                       # architecture, ADRs, runbook, status, roadmap, Devpost text
 ├── scripts/                    # start-local.ps1, uptime probe, container verification
@@ -264,6 +264,16 @@ docker build -t agentshelf .
 ```
 
 The image builds the frontend and serves it from the FastAPI app as a non-root user. The worker uses the same image with `python worker.py`. [`render.yaml`](render.yaml) provisions a sandbox staging API, worker and database on Render, and [`deploy/huggingface/`](deploy/huggingface/) runs migrations, seed, worker and API in a single container.
+
+### Hugging Face Space (API behind the Vercel frontend)
+
+The hosted API runs as a Hugging Face **Docker** Space (`sdk: docker`, `app_port: 7860`). It installs the backend from `backend/uv.lock`, so it gets the same patched dependencies as every other deployment, and runs as uid 1000 with `SERVE_FRONTEND=false`; [`frontend/vercel.json`](frontend/vercel.json) forwards API paths to it.
+
+```bash
+deploy/huggingface/build-space.sh ../agentshelf-space   # README.md, Dockerfile, start.sh, backend/ (no tests), seed/
+```
+
+Push the generated repository to the Space. Configuration (`APP_ENV`, `DATABASE_URL`, PayPal, R2, provider keys) comes from the Space's variables and secrets, which the container receives as environment variables. The app needs no GPU, and ZeroGPU is only available to Gradio Spaces, so the Space runs on CPU basic hardware.
 
 ## Evaluation harnesses
 

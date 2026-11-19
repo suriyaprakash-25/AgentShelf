@@ -3,10 +3,8 @@ title: AgentShelf API
 emoji: 🛍️
 colorFrom: green
 colorTo: blue
-sdk: gradio
-sdk_version: 5.23.1
-python_version: "3.12"
-app_file: space_main.py
+sdk: docker
+app_port: 7860
 pinned: false
 short_description: MCP storefront API with PayPal sandbox checkout
 ---
@@ -15,6 +13,8 @@ short_description: MCP storefront API with PayPal sandbox checkout
 
 Backend for AgentShelf: FastAPI, the MCP server (`/mcp`), PayPal Orders v2 checkout and
 the durable job worker. The browser app runs on Vercel and forwards API traffic here.
-The Gradio runtime only hosts the process; there is no Gradio UI.
+This is a Docker Space: the image installs the backend from `backend/uv.lock`, and
+`start.sh` runs migrations, the sandbox demo seed, the supervised worker and the API
+on port 7860 as uid 1000. It needs no GPU and runs on CPU basic hardware.
 
 Source code and documentation: https://github.com/suriyaprakash-25/AgentShelf
