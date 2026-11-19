@@ -232,6 +232,8 @@ def test_untrusted_origin_cannot_request_or_redeem_links(db_clean, delivery):
 def test_forwarded_ip_isolated_per_client_in_deployed_proxy_mode(db_clean, delivery, monkeypatch):
     """The trusted proxy appends the real peer; that rightmost hop is the quota identity."""
     monkeypatch.setattr(get_settings(), "app_env", "staging")
+    # API-only deployment (the browser app is hosted elsewhere): no built assets needed.
+    monkeypatch.setattr(get_settings(), "serve_frontend", False)
     monkeypatch.setattr(get_settings(), "frontend_url", ORIGIN["origin"])
     monkeypatch.setattr(get_settings(), "trusted_proxy_hops", 1)
     with TestClient(create_app(), base_url="https://testserver") as client:
@@ -247,6 +249,8 @@ def test_forwarded_ip_isolated_per_client_in_deployed_proxy_mode(db_clean, deliv
 def test_spoofed_forwarded_prefix_cannot_mint_new_quota(db_clean, delivery, monkeypatch):
     """Client-supplied hops left of the proxy's entry must not change the identity."""
     monkeypatch.setattr(get_settings(), "app_env", "staging")
+    # API-only deployment (the browser app is hosted elsewhere): no built assets needed.
+    monkeypatch.setattr(get_settings(), "serve_frontend", False)
     monkeypatch.setattr(get_settings(), "frontend_url", ORIGIN["origin"])
     monkeypatch.setattr(get_settings(), "trusted_proxy_hops", 1)
     with TestClient(create_app(), base_url="https://testserver") as client:

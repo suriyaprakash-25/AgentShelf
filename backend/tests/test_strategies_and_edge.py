@@ -68,6 +68,8 @@ def test_deployed_responses_pin_https_and_isolate_the_browsing_context(monkeypat
     assert local.headers["cross-origin-opener-policy"] == "same-origin"
     assert "camera=()" in local.headers["permissions-policy"]
     monkeypatch.setattr(get_settings(), "app_env", "production")
+    # API-only deployment (the browser app is hosted elsewhere): no built assets needed.
+    monkeypatch.setattr(get_settings(), "serve_frontend", False)
     with TestClient(create_app()) as client:
         deployed = client.get("/.well-known/mcp.json")
     assert deployed.headers["strict-transport-security"].startswith("max-age=31536000")
@@ -77,6 +79,17 @@ def test_deployed_responses_pin_https_and_isolate_the_browsing_context(monkeypat
         "create_checkout",
         "get_order_status",
     ]
+
+
+def test_deployed_web_service_refuses_to_start_without_frontend_assets(monkeypatch, tmp_path):
+    from app import main
+
+    monkeypatch.setattr(main, "FRONTEND_DIST", tmp_path)
+    monkeypatch.setattr(get_settings(), "app_env", "production")
+    monkeypatch.setattr(get_settings(), "serve_frontend", True)
+    with pytest.raises(RuntimeError, match="Build frontend assets"):
+        with TestClient(create_app()):
+            pass
 
 
 def test_translation_rejects_malformed_language_tags():
